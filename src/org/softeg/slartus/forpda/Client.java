@@ -15,16 +15,19 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import org.apache.http.cookie.Cookie;
 import org.softeg.slartus.forpda.classes.*;
+import org.softeg.slartus.forpda.classes.Forum;
+import org.softeg.slartus.forpda.classes.Post;
 import org.softeg.slartus.forpda.classes.common.Functions;
+import org.softeg.slartus.forpda.common.HtmlUtils;
 import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.db.ForumsTable;
+import org.softeg.slartus.forpda.download.DownloadReceiver;
+import org.softeg.slartus.forpda.download.DownloadsService;
 import org.softeg.slartus.forpdaapi.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,7 +55,7 @@ public class Client implements IHttpClient {
         return m_K;
     }
 
-    public org.softeg.slartus.forpda.classes.Forum MainForum = null;
+
 
     public static final Client INSTANCE = new Client();
 
@@ -70,7 +73,7 @@ public class Client implements IHttpClient {
         org.softeg.slartus.forpdaapi.Post.delete(this, forumId, themeId, postId, authKey);
     }
 
-    public String getEditPostPlus(String forumId, String themeId, String postId, String authKey) throws Exception {
+    public String getEditPostPlus(String forumId, String themeId, String postId, String authKey) throws Throwable {
         String res = org.softeg.slartus.forpdaapi.Post.getEditPage(this, forumId, themeId, postId, authKey);
 
         String error = org.softeg.slartus.forpdaapi.Post.checkEditPage(res);
@@ -102,11 +105,10 @@ public class Client implements IHttpClient {
                 post, attachToDeleteId, fileList);
     }
 
-    public String changeReputation(String postId, String userId, String type, String message) throws IOException {
-        String error = org.softeg.slartus.forpdaapi.User.changeReputation(this, postId, userId, type, message);
-        if (!TextUtils.isEmpty(error))
-            return error;
-        return "Репутация изменена";
+    public Boolean changeReputation(String postId, String userId, String type, String message,Map<String, String> outParams) throws IOException {
+
+        return  org.softeg.slartus.forpdaapi.User.changeReputation(this, postId, userId, type, message,outParams);
+
     }
 
     public String claim(String themeId, String postId, String message) throws IOException {
@@ -133,7 +135,7 @@ public class Client implements IHttpClient {
         return "Подписка оформлена";
     }
 
-    public String unSubscribe(org.softeg.slartus.forpda.classes.Topic topic) throws IOException {
+    public String unSubscribe(org.softeg.slartus.forpda.classes.Topic topic) throws Throwable {
         String error = org.softeg.slartus.forpdaapi.Topic.unSubscribe(this, topic.getId());
         if (!TextUtils.isEmpty(error))
             return error;
@@ -189,7 +191,18 @@ public class Client implements IHttpClient {
         return body;
     }
 
-    public String performGet(String s) throws IOException {
+    /**
+     * Загрузка тестовой страницы, проверка логина, проверка писем
+     */
+    public void loadTestPage() throws IOException {
+
+        String body = performGet("http://4pda.ru/forum/");
+        checkLogin(body);
+        checkMails(body);
+    }
+    
+    public String performGet(String s) throws IOException, NotReportException {
+
         HttpHelper httpHelper = new HttpHelper();
         String res = null;
         try {
@@ -199,6 +212,8 @@ public class Client implements IHttpClient {
             httpHelper.close();
 
         }
+        if(TextUtils.isEmpty(res))
+            throw new NotReportException("Сервер вернул пустую страницу");
         // m_HttpHelper.close();
         return res;
     }
@@ -242,15 +257,15 @@ public class Client implements IHttpClient {
         return res;
     }
 
-    public UserProfile loadUserProfile(UserProfile userProfile,String userId) throws IOException {
+    public UserProfile loadUserProfile(UserProfile userProfile,String userId) throws Throwable {
         return UserProfile.loadProfile(this, userProfile, userId);
     }
 
-    public UserProfile loadUserProfileFriends(UserProfile userProfile,String userId) throws IOException {
+    public UserProfile loadUserProfileFriends(UserProfile userProfile,String userId) throws Throwable {
         return UserProfile.loadProfileFriends(this, userProfile, userId,m_K);
     }
 
-    public UserProfile loadUserProfileComments(UserProfile userProfile,String userId) throws IOException {
+    public UserProfile loadUserProfileComments(UserProfile userProfile,String userId) throws Throwable {
         return UserProfile.loadUserProfileComments(this, userProfile, userId,m_K);
     }
 
@@ -487,9 +502,11 @@ public class Client implements IHttpClient {
         m_Qms = qms;
     }
 
+    final Pattern qmsPattern = Pattern.compile("QMS:([\\s\\S]*?)</div>");
+    final Pattern newMessages = Pattern.compile("/forum/index.php\\?act=Msg&amp;CODE=01\">((\\d+) новых писем)|(Новых писем: (\\d+))</a>");
+
     public void checkMails(String pageBody) {
-        final Pattern qmsPattern = Pattern.compile("QMS:([\\s\\S]*?)<style");
-        final Pattern newMessages = Pattern.compile("/forum/index.php\\?act=Msg&amp;CODE=01\">((\\d+) новых писем)|(Новых писем: (\\d+))</a>");
+
         Matcher m = newMessages.matcher(pageBody);
         m_MailsCount = 0;
         if (m.find()) {
@@ -513,7 +530,7 @@ public class Client implements IHttpClient {
         doOnMailListener(m_MailsCount);
     }
 
-    public Boolean logout() throws IOException {
+    public Boolean logout() throws Throwable {
 
         String res = org.softeg.slartus.forpdaapi.User.logout(this, m_K);
 
@@ -524,10 +541,10 @@ public class Client implements IHttpClient {
         return !m_Logined;
     }
 
-    public void loadForums(OnProgressChangedListener progressChangedListener) throws Exception {
-        org.softeg.slartus.forpdaapi.Forum forum = org.softeg.slartus.forpdaapi.Forums.loadForums(this);
+    public Forum loadForums(OnProgressChangedListener progressChangedListener) throws Exception {
+     //   org.softeg.slartus.forpdaapi.Forum forum = org.softeg.slartus.forpdaapi.Forums.loadForums(this);
 
-        MainForum = org.softeg.slartus.forpda.classes.Forum.loadFromApiForum(forum);
+        return ForumsTable.loadForumsTree();
 
 
     }
@@ -572,6 +589,7 @@ public class Client implements IHttpClient {
                                        Handler handler, Context context, String themeUrl, Boolean spoilFirstPost, Boolean enableSig,
                                        Boolean enableEmo, String postBody, Boolean hidePostForm,
                                        OnProgressChangedListener progressChangedListener) throws IOException, org.softeg.slartus.forpda.classes.Topic.ThemeParseException {
+
         checkLogin(topicPageBody);
 
         Pattern pattern = Pattern.compile("showtopic=(\\d+)(&(.*))?");
@@ -584,6 +602,7 @@ public class Client implements IHttpClient {
 
             urlParams = m.group(3);
         }
+
 
         TopicBodyBuilder topicBodyBuilder = loadTopic(handler, context, topicId, topicPageBody, spoilFirstPost, m_Logined,
                 urlParams, enableSig, enableEmo, postBody, hidePostForm);
@@ -766,31 +785,35 @@ public class Client implements IHttpClient {
 
     }
 
-    private org.softeg.slartus.forpda.classes.Topic createTopic(Handler handler, final Context context, String id, String page) {
-
+    public static org.softeg.slartus.forpda.classes.Topic createTopic(String id, String page) {
 
         final Pattern navStripPattern = Pattern.compile("<div id=\"navstrip\">(.*?)</div>");
         final Pattern userPattern = Pattern.compile("<b><a href=\"(http://4pda.ru)?/forum/index.php\\?showuser=\\d+\">.*?</a></b> \\( <a href=\"(http://4pda.ru)?/forum/index.php\\?act=Login&amp;CODE=03&amp;k=([a-z0-9]{32})\">Выход</a>");
-        final Pattern titlePattern = Pattern.compile("<div class=\"topic_title_post\">(.*?)<");
+        final Pattern titlePattern = Pattern.compile("<title>(.*?) - 4PDA</title>");
+        final Pattern descriptionPattern = Pattern.compile("<div class=\"topic_title_post\">(.*?)<");
         final Pattern moderatorTitlePattern = Pattern.compile("onclick=\"return setpidchecks\\(this.checked\\);\".*?>&nbsp;(.*?)<");
         final Pattern pagesCountPattern = Pattern.compile("var pages = parseInt\\((\\d+)\\);");
         final Pattern lastPageStartPattern = Pattern.compile("(http://4pda.ru)?/forum/index.php\\?showtopic=\\d+&amp;st=(\\d+)");
         final Pattern currentPagePattern = Pattern.compile("<span class=\"pagecurrent\">(\\d+)</span>");
         String str = page;
 
-        String title = null;
+        String title = "";
         Matcher m = titlePattern.matcher(str);
         if (m.find()) {
             title = m.group(1);
-        } else {
-            m = moderatorTitlePattern.matcher(str);
-            if (m.find())
-                title = m.group(1);
         }
+
 
         org.softeg.slartus.forpda.classes.Topic topic = new org.softeg.slartus.forpda.classes.Topic(id, title);
 
-
+        m = descriptionPattern.matcher(str);
+        if (m.find()) {
+            topic.setDescription(m.group(1).replace(title+", ",""));
+        } else {
+            m = moderatorTitlePattern.matcher(str);
+            if (m.find())
+                topic.setDescription(m.group(1).replace(title+", ",""));
+        }
         m = navStripPattern.matcher(str);
         if (m.find()) {
             final Pattern forumPatter = Pattern.compile("<a href=\"(http://4pda.ru)?/forum/index.php\\?.*?showforum=(\\d+).*?\">(.*?)</a>");
@@ -898,112 +921,138 @@ public class Client implements IHttpClient {
         return topicBodyBuilder;
     }
 
-    public TopicBodyBuilder loadTopic(Handler handler, Context context,
+    private TopicBodyBuilder loadTopic(Handler handler, Context context,
                                       String id, String topicBody, Boolean spoilFirstPost,
                                       Boolean logined, String urlParams, Boolean enableSig,
-                                      Boolean enableEmo, String postBody, Boolean hidePostForm) throws IOException, org.softeg.slartus.forpda.classes.Topic.ThemeParseException {
-        final Pattern errorPattern = Pattern.compile("<div class=\"errorwrap\">([\\s\\S]*?)</div>");
-        Matcher errorMatcher = errorPattern.matcher(topicBody);
-        if (errorMatcher.find()) {
-            final Pattern errorReasonPattern = Pattern.compile("<p>(.*?)</p>");
-            Matcher errorReasonMatcher = errorReasonPattern.matcher(errorMatcher.group(1));
-            if (errorReasonMatcher.find()) {
-                throw new NotReportException(errorReasonMatcher.group(1));
-            }
-        }
+                                      Boolean enableEmo, String postBody, Boolean hidePostForm) throws IOException, org.softeg.slartus.forpda.classes.Topic.ThemeParseException, NotReportException {
 
-        final Pattern headerPattern = Pattern.compile("^([\\s\\S]*?)<!--Begin Msg Number([\\s\\S]*?)<!-- TABLE([\\s\\S]*)");
+
+
+        final Pattern headerPattern = Pattern.compile("^([\\s\\S]*?)<!--Begin Msg Number \\d+-->([\\s\\S]*?)<!-- TABLE([\\s\\S]*)");
         Matcher mainMatcher = headerPattern.matcher(topicBody);
-        if (!mainMatcher.find()) {
+        if (!mainMatcher.find()){
+            final Pattern errorPattern = Pattern.compile("<div class=\"errorwrap\">([\\s\\S]*?)</div>");
+            Matcher errorMatcher = errorPattern.matcher(topicBody);
+            if (errorMatcher.find()) {
+                final Pattern errorReasonPattern = Pattern.compile("<p>(.*?)</p>");
+                Matcher errorReasonMatcher = errorReasonPattern.matcher(errorMatcher.group(1));
+                if (errorReasonMatcher.find()) {
+                    throw new NotReportException(errorReasonMatcher.group(1));
+                }
+            }
+
+
+            if(TextUtils.isEmpty(topicBody))
+                throw new NotReportException("Сервер вернул пустую страницу");
+            if(topicBody.startsWith("<h1>"))
+                throw new NotReportException("Ответ сайта 4pda: "+ Html.fromHtml(topicBody).toString());
             throw new IOException("Ошибка разбора страницы id=" + id);
         }
 
+
+
         Boolean isWebviewAllowJavascriptInterface = Functions.isWebviewAllowJavascriptInterface(context);
+
         Boolean isFullVersion = mainMatcher.group(3).contains("<a href=\"/wp-content/plugins/ngx.php?mb=1\"><b>Мобильная версия</b></a>");
         if (isFullVersion) {
+
             return loadFullVersionTopic(context,id, mainMatcher, spoilFirstPost, logined, urlParams, enableSig,
                     enableEmo, postBody, hidePostForm, isWebviewAllowJavascriptInterface);
         }
 
 
-        org.softeg.slartus.forpda.classes.Topic topic = createTopic(handler, context, id, mainMatcher.group(1));
+        org.softeg.slartus.forpda.classes.Topic topic = createTopic(id, mainMatcher.group(1));
 
         TopicBodyBuilder topicBodyBuilder = new TopicBodyBuilder(context,logined, topic, urlParams, enableSig,
                 enableEmo, postBody, hidePostForm, isWebviewAllowJavascriptInterface);
+
         topicBodyBuilder.beginTopic();
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Boolean browserStyle= prefs.getBoolean("theme.BrowserStyle", false);
 
-        final Pattern postPattern = Pattern.compile("<a name=\"entry(\\d+)\"></a><div class=\"post_header_container\">([\\s\\S]*?)((<!--Begin Msg Number)|(<!-- TABLE))", Pattern.MULTILINE);
-        final Pattern postHeaderPattern = Pattern.compile("<span class=\"post_date\">(.*?)&nbsp;.*?#(\\d+).*");
-        final Pattern nickPattern = Pattern.compile("title=\"Вставить ник\" onclick=\"return insertText\\('\\[b\\](.*?),\\[/b\\]");
-        final Pattern userInfoPattern = Pattern.compile("<span class=\"post_user_info\">(<strong>.*?</strong><br />)?Группа:(.*?)<font color=\"(.*?)\">.*?MID=(\\d+)\">PM</a>");
-        final Pattern reputationPattern = Pattern.compile("title=\"Просмотреть репутацию\">(.*?)</a>");
-        final Pattern actionsPattern = Pattern.compile(".*Жалоба.*");
-        final Pattern bodyPattern = Pattern.compile("<div class=\"post_body\">([\\s\\S]*)</div>");
+        if(browserStyle){
+
+            topicBodyBuilder.addBody(mainMatcher.group(2).replace("onclick=\"return confirm('Подтвердите удаление');\"",""));
+            topicBodyBuilder.endTopic();
+        } else{
+
+            final Pattern postPattern = Pattern.compile("<a name=\"entry(\\d+)\"></a><div class=\"post_header_container\">([\\s\\S]*?)((<!--Begin Msg Number)|(<!-- TABLE))", Pattern.MULTILINE);
+            final Pattern postHeaderPattern = Pattern.compile("<span class=\"post_date\">(.*?)&nbsp;.*?#(\\d+).*");
+            final Pattern nickPattern = Pattern.compile("title=\"Вставить ник\" onclick=\"return insertText\\('\\[b\\](.*?),\\[/b\\]");
+            final Pattern userInfoPattern = Pattern.compile("<span class=\"post_user_info\">(<strong>.*?</strong><br />)?Группа:(.*?)<font color=\"(.*?)\">.*?MID=(\\d+)\">PM</a>");
+            final Pattern reputationPattern = Pattern.compile("title=\"Просмотреть репутацию\">(.*?)</a>");
+            final Pattern actionsPattern = Pattern.compile(".*Жалоба.*");
+            final Pattern bodyPattern = Pattern.compile("<div class=\"post_body\">([\\s\\S]*)</div>");
 
 
-        Matcher matcher = postPattern.matcher(mainMatcher.group(2) + "<!-- TABLE");
-        String today = Functions.getToday();
-        String yesterday = Functions.getYesterToday();
-        org.softeg.slartus.forpda.classes.Post post = null;
-        Boolean spoil = spoilFirstPost;
-        while (matcher.find()) {
+            Matcher matcher = postPattern.matcher(mainMatcher.group(2) + "<!-- TABLE");
+            String today = Functions.getToday();
+            String yesterday = Functions.getYesterToday();
+            org.softeg.slartus.forpda.classes.Post post = null;
+            Boolean spoil = spoilFirstPost;
+
+            while (matcher.find()) {
+                if (post != null) {
+                    topicBodyBuilder.addPost(post, spoil);
+                    spoil = false;
+                }
+                String postId = matcher.group(1);
+                android.util.Log.d("loadTopic",postId);
+                String str = matcher.group(2);
+                Matcher m = postHeaderPattern.matcher(str);
+                if (m.find()) {
+                    post = new org.softeg.slartus.forpda.classes.Post(postId, Functions.getForumDateTime(Functions.parseForumDateTime(m.group(1), today, yesterday)), m.group(2));
+
+                } else
+                    continue;
+
+                m = nickPattern.matcher(str);
+                if (m.find()) {
+                    post.setAuthor(m.group(1));
+
+                }
+
+                m = userInfoPattern.matcher(str);
+                if (m.find()) {
+                    post.setUserGroup(Html.fromHtml(m.group(2)).toString().trim());
+                    post.setUserState(m.group(3));
+                    post.setUserId(m.group(4));
+
+                }
+
+                m = reputationPattern.matcher(str);
+                if (m.find()) {
+                    post.setUserReputation(m.group(1));
+                    post.setCanPlusRep(str.contains("Поднять репутацию"));
+                    post.setCanMinusRep(str.contains("Опустить репутацию"));
+
+                }
+
+
+                m = actionsPattern.matcher(str);
+                if (m.find()) {
+                    post.setCanEdit(str.contains("Ред."));
+                    post.setCanDelete(str.contains("Удал."));
+
+                }
+
+
+                m = bodyPattern.matcher(str);
+                if (m.find()) {
+                    post.setBody("<div class=\"post_body\">" + m.group(1) + "</div>");
+                }
+
+                //topic.addMessage(post);
+            }
+
             if (post != null) {
                 topicBodyBuilder.addPost(post, spoil);
                 spoil = false;
             }
-            String postId = matcher.group(1);
-            android.util.Log.d("loadTopic",postId);
-            String str = matcher.group(2);
-            Matcher m = postHeaderPattern.matcher(str);
-            if (m.find()) {
-                post = new org.softeg.slartus.forpda.classes.Post(postId, Functions.getForumDateTime(Functions.parseForumDateTime(m.group(1), today, yesterday)), m.group(2));
 
-            } else
-                continue;
+            topicBodyBuilder.endTopic();
 
-            m = nickPattern.matcher(str);
-            if (m.find()) {
-                post.setAuthor(m.group(1));
-
-            }
-
-            m = userInfoPattern.matcher(str);
-            if (m.find()) {
-                post.setUserGroup(Html.fromHtml(m.group(2)).toString().trim());
-                post.setUserState(m.group(3));
-                post.setUserId(m.group(4));
-
-            }
-
-            m = reputationPattern.matcher(str);
-            if (m.find()) {
-                post.setUserReputation(m.group(1));
-                post.setCanPlusRep(str.contains("Поднять репутацию"));
-                post.setCanMinusRep(str.contains("Опустить репутацию"));
-
-            }
-
-
-            m = actionsPattern.matcher(str);
-            if (m.find()) {
-                post.setCanEdit(str.contains("Ред."));
-                post.setCanDelete(str.contains("Удал."));
-
-            }
-
-
-            m = bodyPattern.matcher(str);
-            if (m.find()) {
-                post.setBody("<div class=\"post_body\">" + m.group(1) + "</div>");
-            }
-
-            //topic.addMessage(post);
         }
-        if (post != null) {
-            topicBodyBuilder.addPost(post, spoil);
-            spoil = false;
-        }
-        topicBodyBuilder.endTopic();
 
         return topicBodyBuilder;
     }
@@ -1040,7 +1089,7 @@ public class Client implements IHttpClient {
         }
     }
 
-    public void markAllForumAsRead() throws Exception{
+    public void markAllForumAsRead() throws Throwable{
         org.softeg.slartus.forpdaapi.Forums.markAllAsRead(this);
     }
 

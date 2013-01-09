@@ -18,7 +18,7 @@ public interface IHttpClient {
      * @throws IOException
      */
     String performGetWithCheckLogin(String s, OnProgressChangedListener beforeGetPage, OnProgressChangedListener afterGetPage) throws IOException;
-    String performGet(String s) throws IOException;
+    String performGet(String s) throws IOException, NotReportException;
     String performPost(String s, Map<String, String> additionalHeaders) throws IOException;
     String uploadFile(String url, String filePath, Map<String, String> additionalHeaders) throws Exception;
 }

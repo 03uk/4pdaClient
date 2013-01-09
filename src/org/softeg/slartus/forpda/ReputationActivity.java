@@ -277,13 +277,13 @@ public class ReputationActivity extends BaseFragmentActivity implements AdapterV
 
     public class LoadTask extends AsyncTask<String, String, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
         public String Post;
 
         public LoadTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+           
+            dialog = new ProgressDialog(context);
             dialog.setCancelable(false);
         }
 
@@ -337,7 +337,7 @@ public class ReputationActivity extends BaseFragmentActivity implements AdapterV
                 if (ex != null)
                     Log.e(ReputationActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(ReputationActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }

@@ -77,7 +77,7 @@ public class DigestTab extends TreeTab {
 
     public void loadDigest(final Forum digest, OnProgressChangedListener progressChangedListener) throws Exception {
         digest.clearChildren();
-        Exception appException = null;
+        Throwable appException = null;
         try {
             Client.INSTANCE.doOnOnProgressChanged(progressChangedListener, "Получение данных...");
             String body = Client.INSTANCE.performGet("http://4pda.ru/forum/index.php?showtopic="+APP_CATALOG_ID);
@@ -86,7 +86,7 @@ public class DigestTab extends TreeTab {
             Forum appsDigestForum = new Forum(Integer.toString(127361), "Программы");
             getDigest(appsDigestForum, body, "app");
             digest.addForum(appsDigestForum);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             appException = ex;
         }
 
@@ -97,7 +97,7 @@ public class DigestTab extends TreeTab {
             Forum gamesDigestForum = new Forum(Integer.toString(131725), "Игры");
             getDigest(gamesDigestForum, bodyGames, "game");
             digest.addForum(gamesDigestForum);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new Exception("Дайджест игр: "+ ex.getMessage(), ex);
         }
         if(appException!=null)

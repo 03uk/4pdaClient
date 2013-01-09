@@ -24,8 +24,8 @@ public class LoginDialog {
     final EditText password_edit;
     CheckBox privacy_checkbox;
     View mView;
-    Context mContext;
-
+   
+    private Context mContext;
     private LoginDialog(Context context) {
         mContext = context;
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -195,7 +195,7 @@ public class LoginDialog {
 
 
                 return Client.INSTANCE.logout();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 Log.e(mContext, e);
                 ex = e;
                 return false;
@@ -214,7 +214,7 @@ public class LoginDialog {
                     Toast.LENGTH_SHORT).show();
         }
 
-        private Exception ex;
+        private Throwable ex;
       
 
         private void doOnUserChangedListener(String user, Boolean success) {

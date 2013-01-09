@@ -40,6 +40,15 @@ public class Themes extends ArrayList<Topic> {
         return null;
     }
 
+    public Topic findById(String id) {
+        for (int i = 0; i < size(); i++) {
+            Topic topic = get(i);
+            if(topic.getId().equals(id))
+                return topic;
+        }
+        return null;
+    }
+
 
 //    public Date getLastDateTheme() {
 //        Date res = null;

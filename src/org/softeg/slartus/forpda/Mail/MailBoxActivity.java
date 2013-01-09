@@ -126,7 +126,7 @@ public class MailBoxActivity extends BaseFragmentActivity {
         return mailFolders;
     }
 
-    private MailFolders loadFolders() throws IOException {
+    private MailFolders loadFolders() throws Throwable {
 
         String body = Client.INSTANCE.loadPageAndCheckLogin("http://4pda.ru/forum/index.php?act=Msg&CODE=01", null);
 
@@ -155,14 +155,14 @@ public class MailBoxActivity extends BaseFragmentActivity {
 
     private class LoadFoldersTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
         public String Post;
         private MailFolders mMailFolders = null;
 
         public LoadFoldersTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+          
+            dialog = new ProgressDialog(context);
         }
 
         @Override
@@ -171,7 +171,7 @@ public class MailBoxActivity extends BaseFragmentActivity {
                 mMailFolders = loadFolders();
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 mMailFolders = createDefaultFolders();
                 ex = e;
                 return false;
@@ -184,7 +184,7 @@ public class MailBoxActivity extends BaseFragmentActivity {
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {

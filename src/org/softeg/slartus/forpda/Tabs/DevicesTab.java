@@ -2,18 +2,17 @@ package org.softeg.slartus.forpda.Tabs;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Handler;
 import android.text.Html;
 import android.text.TextUtils;
 import android.view.ContextMenu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.DevDbDeviceActivity;
 import org.softeg.slartus.forpda.classes.Forum;
 import org.softeg.slartus.forpda.classes.Topic;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 
 import java.io.IOException;
@@ -54,7 +53,7 @@ public class DevicesTab extends TreeTab {
     }
 
     @Override
-    protected void loadForum(Forum forum, OnProgressChangedListener progressChangedListener) throws IOException {
+    protected void loadForum(Forum forum, OnProgressChangedListener progressChangedListener) throws Throwable {
         switch (forum.level) {
             case 0:
                 parseDevicesTypes(forum, progressChangedListener);
@@ -75,20 +74,11 @@ public class DevicesTab extends TreeTab {
         if (info.id == -1) return;
         final Topic topic = m_ThemeAdapter.getItem((int) info.id);
         if (TextUtils.isEmpty(topic.getId())) return;
-
-        menu.add("Открыть в браузере").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://devdb.ru/" + topic.getId()));
-                getContext().startActivity(Intent.createChooser(marketIntent, "Выберите"));
-                return true;
-            }
-        });
+        ExtUrl.addUrlMenu(getContext(),menu,"http://devdb.ru/" + topic.getId());
     }
 
-
-
     @Override
-    protected void getThemes(OnProgressChangedListener progressChangedListener) throws IOException {
+    protected void getThemes(OnProgressChangedListener progressChangedListener) throws Throwable {
 
     }
 
@@ -114,7 +104,7 @@ public class DevicesTab extends TreeTab {
 
 
 
-    public void parseDevicesTypes(Forum forum, OnProgressChangedListener progressChangedListener) throws IOException {
+    public void parseDevicesTypes(Forum forum, OnProgressChangedListener progressChangedListener) throws Throwable {
         String pageBody = performGet("http://devdb.ru", progressChangedListener);
 
         Pattern pattern = Pattern.compile("<a href=\"http://devdb.ru/(.*?)/\">.*?<br /><br />(.*?)</a></p>");
@@ -125,7 +115,7 @@ public class DevicesTab extends TreeTab {
         }
     }
 
-    public void parseDevicesBrands(Forum forum, OnProgressChangedListener progressChangedListener) throws IOException {
+    public void parseDevicesBrands(Forum forum, OnProgressChangedListener progressChangedListener) throws Throwable {
         String pageBody = performGet("http://devdb.ru/" + forum.getId(), progressChangedListener);
 
         Pattern pattern = Pattern.compile("<li><a href=\"http://devdb.ru/(.*?)\">(.*?)</a></li>");
@@ -136,7 +126,7 @@ public class DevicesTab extends TreeTab {
         }
     }
 
-    public void parseModels(Forum forum, OnProgressChangedListener progressChangedListener) throws IOException {
+    public void parseModels(Forum forum, OnProgressChangedListener progressChangedListener) throws Throwable {
         String pageBody = performGet("http://devdb.ru/" + forum.getId(), progressChangedListener);
 
         Pattern pattern = Pattern.compile("<li><a href=\"http://devdb.ru/(.*?)\">(.*?)</a></li>");
@@ -147,7 +137,7 @@ public class DevicesTab extends TreeTab {
         }
     }
 
-    public static String performGet(String url, OnProgressChangedListener progressChangedListener) throws IOException {
+    public static String performGet(String url, OnProgressChangedListener progressChangedListener) throws Throwable {
         progressChangedListener.onProgressChanged("Получение данных...");
         String pageBody = Client.INSTANCE.performGet(url);
         progressChangedListener.onProgressChanged("Обработка данных...");

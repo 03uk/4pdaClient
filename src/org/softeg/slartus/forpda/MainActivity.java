@@ -22,11 +22,15 @@ import android.widget.Toast;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
+import org.softeg.slartus.forpda.prefs.PreferencesActivity;
+import org.softeg.slartus.forpda.search.SearchActivity;
+import org.softeg.slartus.forpda.Tabs.BaseTab;
 import org.softeg.slartus.forpda.Tabs.ITab;
 import org.softeg.slartus.forpda.Tabs.Tabs;
 import org.softeg.slartus.forpda.Tabs.ThemesTab;
 import org.softeg.slartus.forpda.classes.ProfileMenuFragment;
 import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.topicview.ThemeActivity;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 /**
@@ -58,7 +62,7 @@ public class MainActivity extends BaseFragmentActivity {
 
         try {
 
-            Client client = Client.INSTANCE;
+            org.softeg.slartus.forpda.Client client = org.softeg.slartus.forpda.Client.INSTANCE;
 
             client.addOnUserChangedListener(new Client.OnUserChangedListener() {
                 public void onUserChanged(String user, Boolean success) {
@@ -109,14 +113,22 @@ public class MainActivity extends BaseFragmentActivity {
 
 
     private boolean checkIntent() {
+
         Intent intent = getIntent();
-        if (intent != null && intent.getData() != null) {
+        String action = intent.getAction();
+        String type = intent.getType();
+
+//        if (Intent.ACTION_SEND.equals(action) ){
+//            ImageViewActivity.showImageUrl(this, intent.getData().getPath());
+//            finish();
+//            return true;
+//        }
+
+        if (intent.getData() != null) {
             String url = intent.getData().toString();
             if (IntentActivity.tryShowUrl(this, mHandler, url, false, true)) {
-
                 return true;
             }
-
 
             Toast.makeText(this, "Не умею обрабатывать ссылки такого типа", Toast.LENGTH_SHORT).show();
             finish();
@@ -159,7 +171,7 @@ public class MainActivity extends BaseFragmentActivity {
         MainTabContentFactory mainTabContentFactory = new MainTabContentFactory();
 
         for (int i = 1; i <= getResources().getStringArray(R.array.tabsArray).length; i++) {
-            if(Tabs.getTabVisible(prefs,"Tab" + i))
+            if (Tabs.getTabVisible(prefs, "Tab" + i))
                 addTab(mainTabContentFactory, "Tab" + i, prefs);
         }
 
@@ -265,7 +277,7 @@ public class MainActivity extends BaseFragmentActivity {
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             String template = Tabs.getTemplate(prefs, tabId);
-            ThemesTab tabContent = Tabs.create(MainActivity.this, template, tabId);
+            BaseTab tabContent = Tabs.create(MainActivity.this, template, tabId);
             tabContent.setOnTabTitleChangedListener(new ThemesTab.OnTabTitleChangedListener() {
                 public void onTabTitleChanged(String title) {
                     View tabView = mTabHost.getCurrentTabView();
@@ -344,14 +356,14 @@ public class MainActivity extends BaseFragmentActivity {
 
                                     new Thread(new Runnable() {
                                         public void run() {
-                                            Exception ex = null;
+                                            Throwable ex = null;
                                             try {
                                                 Client.INSTANCE.markAllForumAsRead();
-                                            } catch (Exception e) {
+                                            } catch (Throwable e) {
                                                 ex = e;
                                             }
 
-                                            final Exception finalEx = ex;
+                                            final Throwable finalEx = ex;
 
                                             getHandler().post(new Runnable() {
                                                 public void run() {
@@ -379,7 +391,6 @@ public class MainActivity extends BaseFragmentActivity {
                             })
                             .create()
                             .show();
-
 
 
                     return true;
@@ -431,7 +442,9 @@ public class MainActivity extends BaseFragmentActivity {
         public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
             super.onCreateOptionsMenu(menu, inflater);
 
-            com.actionbarsherlock.view.MenuItem item = menu.add("Поиск").setIcon(R.drawable.search);
+            boolean isLight = false;
+            com.actionbarsherlock.view.MenuItem item = menu.add("Поиск")
+                    .setIcon(isLight ? R.drawable.ic_search_inverse : R.drawable.ic_search);
             item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
                     Intent intent = new Intent(getActivity(), SearchActivity.class);
@@ -460,6 +473,7 @@ public class MainActivity extends BaseFragmentActivity {
 
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
                     try {
+
                         View currentView = getTabHost() == null ? null : getTabHost().getCurrentView();
                         if (currentView == null)
                             ((MainActivity) getActivity()).createTabHost(null);

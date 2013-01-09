@@ -12,6 +12,7 @@ import java.util.ArrayList;
  */
 public class DownloadTasks extends ArrayList<DownloadTask> {
     Client.OnProgressPositionChangedListener m_StateListener;
+    private int fullLength;
 
     public void setOnStateListener(Client.OnProgressPositionChangedListener stateListener) {
         m_StateListener = stateListener;
@@ -67,9 +68,20 @@ public class DownloadTasks extends ArrayList<DownloadTask> {
                     m_StateListener.onProgressChanged(getContext(),downloadTask1,ex );
             }
         });
-        add(downloadTask);
+        add(0,downloadTask);
         return downloadTask;
     }
 
 
+    public void sort() {
+        
+    }
+
+    public int getFullLength() {
+        return fullLength;
+    }
+
+    public void setFullSize(int fullSize) {
+        fullLength = fullSize;
+    }
 }

@@ -1,7 +1,7 @@
 package org.softeg.slartus.forpdaapi;
 
+import android.os.Parcelable;
 import android.text.Html;
-import android.text.Spanned;
 import android.text.TextUtils;
 
 import java.io.IOException;
@@ -15,8 +15,8 @@ import java.util.regex.Pattern;
  * Time: 8:45
  */
 public class UserProfile {
-    public Spanned info;
-    public Spanned sign;
+    public String info;
+    public String sign;
     public String avatar;
     public String Group;
     public String personalPhoto;
@@ -44,13 +44,13 @@ public class UserProfile {
     // интересы
     public String interests;
     //Другая информация
-    public Spanned devices;
-    public Spanned city;
+    public String devices;
+    public String city;
     public Device device;
     // Статистика
     public String registration;
     public String profileViewsCount;
-    public Spanned lastActivity;
+    public String lastActivity;
     public String timeZone;
     public String messagesCount;
     // Контактная информация
@@ -60,23 +60,59 @@ public class UserProfile {
     public String msn;
 
     public String[] getMain() {
-//        ArrayList<String> res= new ArrayList<String>();
-//        if()
         return new String[]{Group, sign==null?"":sign.toString()};
     }
-    
-    public static String[] getGroupData(String[] fullGroupData){
+
+
+
+    public String getValue(int groupPosition, int childPosition){
+        String[] group=null;
+        switch (groupPosition){
+            case 0:
+                group=getMain();
+                break;
+            case 1:
+                group=getAboutGroup();
+                break;
+            case 2:
+                group=getPrivateInfo();
+                break;
+            case 3:
+                group=getInterests();
+                break;
+            case 4:
+                group=getOtherInfo();
+                break;
+            case 5:
+                group=getStatistic();
+                break;
+            case 6:
+                group=getContactInfo();
+                break;
+        }
+        for(String str: group){
+            if(str==null)continue;
+            if(TextUtils.isEmpty(str.trim()))continue;
+            if(childPosition==0)
+                return str;
+            childPosition--;
+        }
+        return "";
+    }
+
+    public static String[] getGroupSimpleData(String[] fullGroupData){
         ArrayList<String> res=new ArrayList<String>();
         for(String str: fullGroupData){
-            if(TextUtils.isEmpty(str))continue;
-            res.add(str);
+            if(str==null)continue;
+            if(TextUtils.isEmpty(str.trim()))continue;
+            res.add(Html.fromHtml(str).toString().trim());
         }
         String[] resArray=new String[res.size()];
         return res.toArray(resArray);
     }
 
     public String[] getAboutGroup() {
-        return new String[]{getAbout()+(site==null?"":("\n"+ site)),info==null?"":info.toString()};
+        return new String[]{getAbout()+(site==null?"":("\n"+ site)),info};
     }
 
     public String[] getPrivateInfo() {
@@ -88,7 +124,7 @@ public class UserProfile {
     }
 
     public String[] getOtherInfo() {
-        return new String[]{devices==null?"":devices.toString(), city==null?"":city.toString(), device==null?"":("Устройство: " + device.name)};
+        return new String[]{devices, city, device==null?"":("Устройство: " + device.name)};
     }
 
     public String[] getStatistic() {
@@ -122,7 +158,7 @@ public class UserProfile {
             } else if (group.equals("Options")) {
                 // пропускаем
             } else if (group.equals("Personal Statement")) {
-                res.about = Html.fromHtml(getValue("id='pp-personal_statement'>([\\s\\S]*?)</?div", groupBody)).toString();
+                res.about = getValue("id='pp-personal_statement'>([\\s\\S]*?)</?div", groupBody).toString();
                 res.site = getValue("href='(.*?)'", groupBody);
             } else if (group.equals("Personal Info")) {
                 m = Pattern.compile("<div class='row1' style='padding:6px; margin-bottom:1px; padding-left:10px'>(.*?)</div>").matcher(groupBody);
@@ -143,10 +179,10 @@ public class UserProfile {
                     res.born = "День рождения не указан";
 
             } else if (group.equals("Interests")) {
-                res.interests = Html.fromHtml(getValue("id='pp-personal_statement'>([\\s\\S]*?)</div>", groupBody).trim()).toString();
+                res.interests = getValue("id='pp-personal_statement'>([\\s\\S]*?)</div>", groupBody).trim();
             } else if (group.equals("Custom Fields")) {
-                res.devices = Html.fromHtml(getValue("Описание ваших девайсов:(.*?)</div>", groupBody, "Описание ваших девайсов: "));
-                res.city = Html.fromHtml(getValue("Город где вы живёте:(.*?)</div>", groupBody, "Город где вы живёте: "));
+                res.devices = getValue("Описание ваших девайсов:(.*?)</div>", groupBody, "Описание ваших девайсов: ");
+                res.city = getValue("Город где вы живёте:(.*?)</div>", groupBody, "Город где вы живёте: ");
                 res.device = Device.parse(getValue("Устройство:(.*?)</div>", groupBody));
             } else if (group.equals("Statistics")) {
                 m = Pattern.compile("<div class='row\\d' style='padding:6px; margin-bottom:1px; padding-left:10px'>([\\s\\S]*?)</div>").matcher(groupBody);
@@ -160,7 +196,7 @@ public class UserProfile {
                             res.profileViewsCount = m.group(1);
                             break;
                         case 2:
-                            res.lastActivity = Html.fromHtml(m.group(1));
+                            res.lastActivity = m.group(1);
                             break;
                         case 3:
                             res.timeZone = m.group(1);
@@ -176,13 +212,13 @@ public class UserProfile {
                 while (m.find()) {
                     String contactGroup = m.group(1);
                     if (contactGroup.equals("aim"))
-                        res.aim = "Вконтакте: " + Html.fromHtml(m.group(2)).toString();
+                        res.aim = "Вконтакте: " + m.group(2);
                     else if (contactGroup.equals("yahoo"))
-                        res.yahoo = "Twitter: " + Html.fromHtml(m.group(2)).toString();
+                        res.yahoo = "Twitter: " + m.group(2);
                     else if (contactGroup.equals("icq"))
-                        res.icq = "ICQ: " + Html.fromHtml(m.group(2)).toString();
+                        res.icq = "ICQ: " + m.group(2);
                     else if (contactGroup.equals("msn"))
-                        res.msn = "Jabber: " + Html.fromHtml(m.group(2)).toString();
+                        res.msn = "Jabber: " + m.group(2);
                 }
             }
         }
@@ -190,10 +226,10 @@ public class UserProfile {
 
     private static void parseMainTable(UserProfile res, String table) {
         res.avatar = getValue("'(http://s.4pda.ru/forum//uploads/av-.*?)'", table);
-        res.info=Html.fromHtml(getValue("<div class='pp-contentbox-entry-noheight'>([\\s\\S]*?)<hr class=\"sfr\" />", table));
-        res.sign = Html.fromHtml(getValue("<hr class=\"sfr\" />([\\s\\S]*?)</div>", table));
+        res.info=getValue("<div class='pp-contentbox-entry-noheight'>([\\s\\S]*?)<hr class=\"sfr\" />", table);
+        res.sign = getValue("<hr class=\"sfr\" />([\\s\\S]*?)</div>", table);
         if (res.sign.toString() == "")
-            res.sign = Html.fromHtml("<i>Нет подписи</i>");
+            res.sign = "<i>Нет подписи</i>";
         res.Group = getValue("<strong><span.*?>(.*?)</span></strong>", table);
     }
 
@@ -316,7 +352,7 @@ public class UserProfile {
         return "";
     }
 
-    public static UserProfile loadProfile(IHttpClient client, UserProfile userProfile, String userId) throws IOException {
+    public static UserProfile loadProfile(IHttpClient client, UserProfile userProfile, String userId) throws Throwable {
         if (userProfile == null)
             userProfile = new UserProfile();
         if (TextUtils.isEmpty(userProfile.registration)) {
@@ -329,7 +365,7 @@ public class UserProfile {
     }
 
     public static UserProfile loadProfileFriends(IHttpClient client, UserProfile userProfile, String userId, String md5)
-            throws IOException {
+            throws Throwable {
         if (userProfile == null)
             userProfile = new UserProfile();
         if (userProfile.Friends.size()<10)
@@ -343,7 +379,7 @@ public class UserProfile {
     }
 
     public static UserProfile loadUserProfileComments(IHttpClient client, UserProfile userProfile, String userId, String md5)
-            throws IOException {
+            throws Throwable {
         if (userProfile == null)
             userProfile = new UserProfile();
         if (userProfile.UserComments.size()<10)

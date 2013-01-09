@@ -18,9 +18,11 @@ import org.softeg.slartus.forpda.classes.Forum;
 import org.softeg.slartus.forpda.classes.ForumItem;
 import org.softeg.slartus.forpda.classes.Forums;
 import org.softeg.slartus.forpda.classes.Topic;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.classes.common.Functions;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.R;
+import org.softeg.slartus.forpda.db.ForumsTable;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 
 import java.io.IOException;
@@ -211,31 +213,35 @@ public class ForumTreeTab extends ThemesTab {
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo, Handler handler) {
         if (m_CurrentItem != null && !m_CurrentItem.hasChildForums())
             super.onCreateContextMenu(menu, v, menuInfo, handler);
+        else{
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+            if (info.id == -1) return;
+            Forum forum= m_ForumsAdapter.getItem((int) info.id);           
+            if (TextUtils.isEmpty(forum.getId())) return;
+            ExtUrl.addUrlMenu(getContext(),menu,"http://4pda.ru/forum/index.php?showforum="+forum.getId());
+        }
+        
     }
 
     private class ShowForumsTask extends AsyncTask<ForumItem, String, Boolean> {
 
-        Context mContext;
-        private final ProgressDialog dialog;
+        
+        private ProgressDialog dialog=null;
 
         public ShowForumsTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+        
+            dialog = new ProgressDialog(context);
             dialog.setCancelable(false);
         }
 
         private Forum m_StartForum;
-
+        private Forum m_MainForum;
         @Override
         protected Boolean doInBackground(ForumItem... forums) {
             try {
                 m_StartForum = null;
-                Client client = Client.INSTANCE;
-                client.loadForums(new OnProgressChangedListener() {
-                    public void onProgressChanged(String state) {
-                        publishProgress(state);
-                    }
-                });
+                Client.INSTANCE.loadTestPage();
+                m_MainForum = ForumsTable.loadForumsTree(true);
                 fillForums();
                 if (m_StartForumId == ID_FORUM_NULL && m_StartTopicId != -1)
                     m_StartForumId = Integer.parseInt(Client.INSTANCE.getThemeForumId(Integer.toString(m_StartTopicId)));
@@ -254,10 +260,10 @@ public class ForumTreeTab extends ThemesTab {
 
         private void fillForums() {
             if (m_CheckedIds.size() == 0 || (m_CheckedIds.containsKey("all") && m_Subforums))
-                m_PDAForum = Client.INSTANCE.MainForum;
+                m_PDAForum = m_MainForum;
             else {
-                m_PDAForum = new Forum(Client.INSTANCE.MainForum.getId(), Client.INSTANCE.MainForum.getTitle());
-                fillForums(m_PDAForum, Client.INSTANCE.MainForum, false);
+                m_PDAForum = new Forum(m_MainForum.getId(),m_MainForum.getTitle());
+                fillForums(m_PDAForum, m_MainForum, false);
             }
         }
 
@@ -310,9 +316,10 @@ public class ForumTreeTab extends ThemesTab {
         // can use UI thread here
         protected void onPreExecute() {
             try {
+
                 this.dialog.setMessage(getContext().getResources().getString(R.string.loading));
                 this.dialog.show();
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 Log.e(null, ex);
             }
         }
@@ -324,8 +331,9 @@ public class ForumTreeTab extends ThemesTab {
             try {
                 if (this.dialog.isShowing()) {
                     this.dialog.dismiss();
+
                 }
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 Log.e(null, ex);
             }
             if (success) {
@@ -343,7 +351,7 @@ public class ForumTreeTab extends ThemesTab {
                 lstTree.getRefreshableView().setSelection(0);
 
             } else {
-                Log.e(mContext, ex);
+                Log.e(ForumTreeTab.this.getContext(), ex);
             }
 
             super.onPostExecute(success);

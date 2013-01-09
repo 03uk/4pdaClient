@@ -14,12 +14,14 @@ import net.londatiga.android.ActionItem;
 import net.londatiga.android.QuickAction;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.Mail.EditMailActivity;
-import org.softeg.slartus.forpda.ProfileActivity;
+import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.R;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * User: slinkin
@@ -77,15 +79,12 @@ public class ForumUser {
             public void onItemClick(int pos) {
                 try {
                     if (pos == finalSendLSPosition) {
-                        Intent intent = new Intent(context, EditMailActivity.class);
-                        intent.putExtra(EditMailActivity.KEY_PARAMS, "CODE=04&act=Msg&MID=" + userId);
-                        intent.putExtra(EditMailActivity.KEY_USER, userNick);
-                        intent.putExtra(EditMailActivity.KEY_RETERN_BACK, true);
-                        context.startActivity(intent);
+                        EditMailActivity.sendMessage(context,"CODE=04&act=Msg&MID=" + userId,userNick,true);
+
                     } else if (pos == finalSendQmsPosition) {
                         QmsChatActivity.openChat(context, userId, userNick);
                     } else if (pos == finalShowProfilePosition) {
-                        ProfileActivity.startActivity(context,userId,userNick);
+                        ProfileActivity.startActivity(context, userId, userNick);
                     }
 
                 } catch (Exception ex) {
@@ -119,24 +118,37 @@ public class ForumUser {
                         new Thread(new Runnable() {
                             public void run() {
                                 Exception ex = null;
-
-                                String res = null;
+                                final Map<String, String> outParams = new HashMap<String, String>();
+                                Boolean res = false;
                                 try {
-                                    res = Client.INSTANCE.changeReputation(postId, userId, type, message_edit.getText().toString());
+                                    res = Client.INSTANCE.changeReputation(postId, userId, type, message_edit.getText().toString()
+                                            ,outParams);
                                 } catch (IOException e) {
                                     ex = e;
                                 }
 
                                 final Exception finalEx = ex;
-                                final String finalRes = res;
+                                final Boolean finalRes = res;
                                 handler.post(new Runnable() {
                                     public void run() {
                                         try {
                                             if (finalEx != null) {
                                                 Toast.makeText(context, "Ошибка изменения репутации", Toast.LENGTH_SHORT).show();
                                                 Log.e(context, finalEx);
-                                            } else {
-                                                Toast.makeText(context, finalRes, Toast.LENGTH_SHORT).show();
+                                            } else if(!finalRes){
+                                                new AlertDialog.Builder(context)
+                                                        .setTitle("Ошибка изменения репутации")
+                                                        .setMessage(outParams.get("Result"))
+                                                        .setCancelable(true)
+                                                        .setPositiveButton("OK",new DialogInterface.OnClickListener() {
+                                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                                dialogInterface.dismiss();
+                                                            }
+                                                        })
+                                                        .create()
+                                                        .show();
+                                            }else {
+                                                Toast.makeText(context, outParams.get("Result"), Toast.LENGTH_SHORT).show();
                                             }
                                         } catch (Exception ex) {
                                             Log.e(context, ex);

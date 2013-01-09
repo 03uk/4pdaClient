@@ -21,6 +21,7 @@ import org.softeg.slartus.forpda.classes.LazyGallery.LazyAdapter;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -115,7 +116,7 @@ public class DevDbDeviceActivity extends BaseActivity {
         super.onDestroy();
     }
 
-    private void fill() {
+    private void fill() throws IOException {
         adapter = new LazyAdapter(DevDbDeviceActivity.this,
                 m_DevDbDevice.getScreenshotUrls().toArray(new String[m_DevDbDevice.getScreenshotUrls().size()]));
         gallery.setAdapter(adapter);
@@ -215,12 +216,12 @@ public class DevDbDeviceActivity extends BaseActivity {
 
     public class LoadPageTask extends AsyncTask<String, String, Boolean> {
 
-        Context mContext;
+
         private final ProgressDialog dialog;
 
         public LoadPageTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
             dialog.setCancelable(false);
         }
 
@@ -229,7 +230,7 @@ public class DevDbDeviceActivity extends BaseActivity {
             this.dialog.setMessage(progress[0]);
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         @Override
         protected Boolean doInBackground(String... params) {
@@ -242,7 +243,7 @@ public class DevDbDeviceActivity extends BaseActivity {
                 });
                 m_DevDbDevice.parse(pageBody);
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -272,10 +273,14 @@ public class DevDbDeviceActivity extends BaseActivity {
             }
 
             if (success) {
-                fill();
+                try {
+                    fill();
+                } catch (IOException e) {
+                    Log.e(DevDbDeviceActivity.this,ex);
+                }
             } else {
                 if (ex != null)
-                    Log.e(mContext, ex);
+                    Log.e(DevDbDeviceActivity.this, ex);
             }
         }
 

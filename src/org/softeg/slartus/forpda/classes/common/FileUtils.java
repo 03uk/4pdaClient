@@ -1,5 +1,7 @@
 package org.softeg.slartus.forpda.classes.common;
 
+import android.os.Environment;
+
 import java.io.*;
 import java.net.URLDecoder;
 
@@ -117,5 +119,38 @@ public class FileUtils {
 //
 //        }
 
+    }
+
+    static public boolean hasStorage(String dirPath, boolean requireWriteAccess) {
+        //TODO: After fix the bug,  add "if (VERBOSE)" before logging errors.
+        String state = Environment.getExternalStorageState();
+       // Log.v(TAG, "storage state is " + state);
+
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            if (requireWriteAccess) {
+                boolean writable = checkFsWritable(dirPath);
+            //    Log.v(TAG, "storage writable is " + writable);
+                return writable;
+            } else {
+                return true;
+            }
+        } else if (!requireWriteAccess && Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean checkFsWritable(String dirPath) {
+        // Create a temporary file to see whether a volume is really writeable.
+        // It's important not to put it in the root directory which may have a
+        // limit on the number of files.
+
+        File directory = new File(dirPath);
+        if (!directory.isDirectory()) {
+            if (!directory.mkdirs()) {
+                return false;
+            }
+        }
+        return directory.canWrite();
     }
 }

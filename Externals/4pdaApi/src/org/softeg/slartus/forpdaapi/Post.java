@@ -43,7 +43,7 @@ public class Post {
      * @return
      * @throws Exception
      */
-    public static String getNewPostPage(IHttpClient httpClient,String forumId, String topicId, String authKey) throws Exception {
+    public static String getNewPostPage(IHttpClient httpClient,String forumId, String topicId, String authKey) throws IOException {
         return getEditPage( httpClient, forumId,  topicId,  "-1",  authKey);
     }
 
@@ -57,7 +57,7 @@ public class Post {
      * @return
      * @throws Exception
      */
-    public static String getEditPage(IHttpClient httpClient,String forumId, String topicId, String postId, String authKey) throws Exception {
+    public static String getEditPage(IHttpClient httpClient,String forumId, String topicId, String postId, String authKey) throws IOException {
         String res;
         if (postId.equals("-1"))
             res = httpClient.performGet("http://4pda.ru/forum/index.php?act=post&do=reply_post&f=" + forumId
@@ -228,6 +228,43 @@ public class Post {
             return Html.fromHtml(m.group(3)).toString();
         }
         return null;
+    }
+
+    public static String attachFileFullVersion(IHttpClient httpClient,String forumId, String topicId, String authKey, String attachPostKey, String postId, Boolean enablesig,Boolean enableEmo,
+                                    String post, String filePath, String addedFileList) throws Exception {
+        Map<String, String> additionalHeaders = new HashMap<String, String>();
+        additionalHeaders.put("st", "0");
+        additionalHeaders.put("act", "Post");
+
+        additionalHeaders.put("f", forumId);
+        additionalHeaders.put("auth_key", authKey);
+        additionalHeaders.put("removeattachid", "0");
+        additionalHeaders.put("MAX_FILE_SIZE", "0");
+        additionalHeaders.put("CODE", "03");
+        additionalHeaders.put("t", topicId);
+
+        if(attachPostKey!=null)
+            additionalHeaders.put("attach_post_key", attachPostKey);
+
+        additionalHeaders.put("parent_id", "0");
+        additionalHeaders.put("ed-0_wysiwyg_used", "0");
+        additionalHeaders.put("editor_ids[]", "ed-0");
+        additionalHeaders.put("_upload_single_file", "1");
+        additionalHeaders.put("upload_process", "Закачать");
+        additionalHeaders.put("file-list", addedFileList);
+
+
+        if (!postId.equals("-1"))
+            additionalHeaders.put("p", postId);
+
+        additionalHeaders.put("Post", post);
+        if (enablesig)
+            additionalHeaders.put("enablesig", "yes");
+        if (enableEmo)
+            additionalHeaders.put("enableEmo", "yes");
+        additionalHeaders.put("iconid", "0");
+
+        return httpClient.uploadFile("http://4pda.ru/forum/index.php", filePath, additionalHeaders);
     }
 
     /**

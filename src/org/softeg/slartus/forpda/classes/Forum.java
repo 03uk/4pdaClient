@@ -30,6 +30,8 @@ public class Forum extends ForumItem {
         m_Title = title;
     }
 
+
+
     public String getTitle() {
         return m_Title;
     }

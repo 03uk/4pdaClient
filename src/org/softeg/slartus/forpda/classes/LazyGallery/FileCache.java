@@ -6,17 +6,19 @@ package org.softeg.slartus.forpda.classes.LazyGallery;
  * Time: 13:11
  */
 import android.content.Context;
+import org.softeg.slartus.forpda.MyApp;
 
 import java.io.File;
+import java.io.IOException;
 
 public class FileCache {
 
     private File cacheDir;
 
-    public FileCache(Context context){
+    public FileCache(Context context) throws IOException {
         //Find the dir to save cached images
         if (android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED))
-            cacheDir=new File(android.os.Environment.getExternalStorageDirectory(),"4pdaClient");
+            cacheDir=new File(MyApp.INSTANCE.getAppExternalFolderPath()+"FileCache");
         else
             cacheDir=context.getCacheDir();
         if(!cacheDir.exists())

@@ -131,15 +131,15 @@ public abstract class TreeTab extends ThemesTab {
             super.onCreateContextMenu(menu, v, menuInfo, handler);
     }
 
-    protected abstract void loadForum(Forum forum, OnProgressChangedListener progressChangedListener) throws Exception;
+    protected abstract void loadForum(Forum forum, OnProgressChangedListener progressChangedListener) throws Exception, Throwable;
 
     private class ShowForumsTask extends AsyncTask<Forum, String, Boolean> {
-        Context mContext;
+      
         private final ProgressDialog dialog;
 
         public ShowForumsTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+           
+            dialog = new ProgressDialog(context);
             dialog.setCancelable(false);
         }
 
@@ -157,7 +157,7 @@ public abstract class TreeTab extends ThemesTab {
                 });
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 ex = e;
                 return false;
             }
@@ -178,7 +178,7 @@ public abstract class TreeTab extends ThemesTab {
             }
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -196,7 +196,7 @@ public abstract class TreeTab extends ThemesTab {
 
 
             } else {
-                Log.e(mContext, ex);
+                Log.e(TreeTab.this.getContext(), ex);
             }
             lstTree.onRefreshComplete();
             super.onPostExecute(success);

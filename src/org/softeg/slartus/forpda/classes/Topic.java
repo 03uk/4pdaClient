@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -14,10 +13,11 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import org.softeg.slartus.forpda.Client;
+import org.softeg.slartus.forpda.IntentActivity;
 import org.softeg.slartus.forpda.R;
-import org.softeg.slartus.forpda.ThemeActivity;
 import org.softeg.slartus.forpda.classes.common.Functions;
 import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.topicview.ThemeActivity;
 
 import java.io.IOException;
 import java.net.URI;
@@ -162,6 +162,10 @@ public class Topic extends ForumItem {
         return m_SpannedDescription;
     }
 
+    public String getDescriptionString() {
+        return m_SpannedDescription==null?"":m_SpannedDescription.toString();
+    }
+
     public void setDescription(String description) {
         if (description != null)
             m_SpannedDescription = Html.fromHtml(description);
@@ -201,11 +205,13 @@ public class Topic extends ForumItem {
         context.startActivity(intent);
     }
 
+    public String getShowBrowserUrl(String params) {
+        return "http://4pda.ru/forum/index.php?showtopic=" + m_Id + (TextUtils.isEmpty(params) ? "" : ("&" + params));
+    }
+
     public void showBrowser(Context context, String params) {
-        Intent marketIntent = new Intent(
-                Intent.ACTION_VIEW,
-                Uri.parse("http://" + Client.SITE + "/forum/index.php?showtopic=" + m_Id + (TextUtils.isEmpty(params) ? "" : ("&" + params))));
-        context.startActivity(Intent.createChooser(marketIntent,"Выберите"));
+        IntentActivity.showInDefaultBrowser(context,getShowBrowserUrl(params));
+
     }
 
     public String getAuthKey() {
@@ -345,16 +351,16 @@ public class Topic extends ForumItem {
         new Thread(new Runnable() {
             public void run() {
 
-                Exception ex = null;
+                Throwable ex = null;
 
                 String res = null;
                 try {
                     res = Client.INSTANCE.unSubscribe(Topic.this);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     ex = e;
                 }
 
-                final Exception finalEx = ex;
+                final Throwable finalEx = ex;
 
                 final String finalRes = res;
                 handler.post(new Runnable() {

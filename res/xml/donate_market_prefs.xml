@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference android:title="Поддержать разработчика"
+                android:summary="0.99$"
+                android:key="Billing.OneLevel"/>
+    <Preference android:title="Дать разработчику на пиво"
+                android:summary="2.99$"
+                android:key="Billing.ThreeLevel"/>
+    <Preference android:title="Улучшить настроение разработчику"
+                android:summary="4.99$"
+                android:key="Billing.FiveLevel"/>
+</PreferenceScreen>

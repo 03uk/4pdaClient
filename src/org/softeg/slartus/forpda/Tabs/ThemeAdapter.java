@@ -13,6 +13,7 @@ import org.softeg.slartus.forpda.QuickStartActivity;
 import org.softeg.slartus.forpda.R;
 import org.softeg.slartus.forpda.classes.Topic;
 import org.softeg.slartus.forpda.classes.common.ExtPreferences;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.common.HelpTask;
 import org.softeg.slartus.forpda.common.Log;
 
@@ -43,7 +44,7 @@ public class ThemeAdapter extends ArrayAdapter<Topic> {
                 "interface.themeslist.title.font.size", 13);
         m_TopTextSize = (int) Math.floor(10.0 / 13 * m_ThemeTitleSize);
         m_BottomTextSize = (int) Math.floor(11.0 / 13 * m_ThemeTitleSize);
-        m_FlagTextSize= (int) Math.floor(12.0 / 13 * m_ThemeTitleSize);
+        m_FlagTextSize = (int) Math.floor(12.0 / 13 * m_ThemeTitleSize);
 
     }
 
@@ -56,7 +57,7 @@ public class ThemeAdapter extends ArrayAdapter<Topic> {
                 "interface.themeslist.title.font.size", 13);
         m_TopTextSize = (int) Math.floor(10.0 / 13 * m_ThemeTitleSize);
         m_BottomTextSize = (int) Math.floor(11.0 / 13 * m_ThemeTitleSize);
-        m_FlagTextSize= (int) Math.floor(12.0 / 13 * m_ThemeTitleSize);
+        m_FlagTextSize = (int) Math.floor(12.0 / 13 * m_ThemeTitleSize);
 
     }
 
@@ -91,7 +92,7 @@ public class ThemeAdapter extends ArrayAdapter<Topic> {
             holder = new ViewHolder();
             holder.txtIsNew = (ImageView) convertView
                     .findViewById(R.id.txtIsNew);
-            holder.usericon=convertView.findViewById(R.id.usericon);
+            holder.usericon = convertView.findViewById(R.id.usericon);
             //holder.txtIsNew.setTextSize(m_FlagTextSize);
 
             holder.txtAuthor = (TextView) convertView
@@ -180,34 +181,19 @@ public class ThemeAdapter extends ArrayAdapter<Topic> {
                     return true;
                 }
             });
-            menu.add("Открыть в браузере").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                public boolean onMenuItemClick(MenuItem menuItem) {
 
-                    topic.showBrowser(getContext(), params);
-                    topic.setIsNew(false);
-                    notifyDataSetChanged();
-                    return true;
-                }
-            });
+            ExtUrl.addUrlSubMenu(getContext(), menu, topic.getShowBrowserUrl(params));
             addOptionsMenu(getContext(), handler, menu, topic, addFavorites, null);
-//            menu.add("Профиль автора").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//                public boolean onMenuItemClick(MenuItem menuItem) {
-//
-//
-//                    topic.setIsNew(false);
-//                    notifyDataSetChanged();
-//                    return true;
-//                }
-//            });
-
         } catch (Exception ex) {
             Log.e(this.getContext(), ex);
         }
     }
 
+
+
     public static SubMenu addOptionsMenu(final Context context, final Handler mHandler, Menu menu, final Topic topic,
                                          Boolean addFavorites, final String shareItUrl) {
-        SubMenu optionsMenu = menu.addSubMenu("Опции").setIcon(android.R.drawable.ic_menu_more);
+        SubMenu optionsMenu = menu.addSubMenu("Опции..").setIcon(android.R.drawable.ic_menu_more);
 
         configureOptionsMenu(context, mHandler, optionsMenu, topic, addFavorites, shareItUrl);
         return optionsMenu;

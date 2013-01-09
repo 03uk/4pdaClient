@@ -30,7 +30,7 @@ public class ImageLoader {
     private Map<ImageView, String> imageViews=Collections.synchronizedMap(new WeakHashMap<ImageView, String>());
     ExecutorService executorService;
 
-    public ImageLoader(Context context){
+    public ImageLoader(Context context) throws IOException {
         fileCache=new FileCache(context);
         executorService=Executors.newFixedThreadPool(5);
     }

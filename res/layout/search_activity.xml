@@ -5,34 +5,6 @@
               android:layout_height="fill_parent"
               android:orientation="vertical"
               style="?defaultBackground">
-    <RelativeLayout android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"   style="?defaultBackground" android:padding="0dip">
-        <ImageButton android:id="@+id/btnSettins" android:src="@android:drawable/ic_menu_preferences"
-                     android:layout_height="wrap_content"
-                     android:layout_width="wrap_content" android:layout_margin="0dip" android:background="@null"
-                     android:layout_centerVertical="true"/>
-        <EditText
-                android:id="@+id/query_edit"
-                android:singleLine="true"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                style="?defaultColors"
-                android:hint="Ключевые слова"
-                android:scrollHorizontally="true"
-                android:capitalize="none"
-                android:autoText="false"
-                android:layout_centerVertical="true"
-                android:imeOptions="actionSearch"
-                android:imeActionLabel="Поиск"
-                android:layout_toLeftOf="@+id/btnSearch"
-                android:layout_toRightOf="@+id/btnSettins"/>
-        <ImageButton android:layout_height="wrap_content" android:layout_width="wrap_content"
-                     android:layout_margin="0dip"
-                     android:id="@+id/btnSearch" android:src="@android:drawable/ic_menu_search"
-                     android:background="@null"
-                     android:layout_centerVertical="true" android:layout_alignParentRight="true"></ImageButton>
-    </RelativeLayout>
-
     <TableLayout android:layout_width="fill_parent"
                  android:layout_height="wrap_content"
                  style="?defaultBackground"
@@ -59,6 +31,18 @@
                     android:scrollHorizontally="true"
                     android:capitalize="none"
                     android:autoText="false"/>
+        </TableRow>
+        <TableRow android:layout_width="fill_parent"
+                  android:layout_height="wrap_content">
+            <CheckBox android:id="@+id/chkSearchInTopic"
+                      android:layout_span="2"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:checked="false"
+                      android:text="Искать в теме"
+                      android:paddingLeft="50dip"
+                      style="?defaultColors"
+                      android:visibility="gone"/>
         </TableRow>
         <TableRow android:layout_width="fill_parent"
                   android:layout_height="wrap_content">
@@ -113,6 +97,17 @@
                       android:layout_height="wrap_content"
                       android:checked="true"
                       android:text="Искать в подфорумах?"
+                      android:paddingLeft="50dip"
+                      style="?defaultColors"/>
+        </TableRow>
+        <TableRow android:layout_width="fill_parent"
+                  android:layout_height="wrap_content">
+            <CheckBox android:id="@+id/chkTopics"
+                      android:layout_span="2"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:checked="false"
+                      android:text="Результаты в виде тем"
                       android:paddingLeft="50dip"
                       style="?defaultColors"/>
         </TableRow>

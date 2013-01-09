@@ -19,6 +19,7 @@ import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockFragment;
@@ -30,6 +31,7 @@ import org.softeg.slartus.forpda.IntentActivity;
 import org.softeg.slartus.forpda.Mail.classes.Mail;
 import org.softeg.slartus.forpda.MyApp;
 import org.softeg.slartus.forpda.R;
+import org.softeg.slartus.forpda.classes.BrowserViewsFragmentActivity;
 import org.softeg.slartus.forpda.classes.MailActivityInterface;
 import org.softeg.slartus.forpda.common.Log;
 
@@ -41,14 +43,13 @@ import java.util.regex.Pattern;
  * Date: 14.03.12
  * Time: 12:38
  */
-public class MailActivity extends BaseFragmentActivity implements MailActivityInterface {
+public class MailActivity extends BrowserViewsFragmentActivity implements MailActivityInterface {
     private Handler mHandler = new Handler();
     private Uri m_Data = null;
     private String m_Id = null;
     private WebView mWvBody;
     private TextView author_text, date_text;
-    private Boolean m_UseVolumesScroll = false;
-    private Boolean m_UseZoom = true;
+
     MenuFragment mFragment1;
     private Mail m_Mail = null;
 
@@ -86,6 +87,11 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
         showMail(url);
     }
 
+
+    public ImageButton getFullScreenButton() {
+        return (ImageButton)findViewById(R.id.btnFullScreen);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -97,6 +103,15 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+
+        if(getCurrentFullScreen()){
+            updateFullscreenStatus(false);
+            return;
+        }
+        super.onBackPressed();
+    }
     private void goBack() {
         if (getIntent().getData() == null)
             onBackPressed();
@@ -109,7 +124,8 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
         }
     }
 
-    private void createActionMenu() {
+
+    protected void createActionMenu() {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         mFragment1 = (MenuFragment) fm.findFragmentByTag("f1");
@@ -118,18 +134,11 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
             ft.add(mFragment1, "f1");
         }
         ft.commit();
-    }
 
-    private void loadPreferences(SharedPreferences prefs) {
-        m_UseZoom = prefs.getBoolean("theme.ZoomUsing", true);
-
-        // m_UsePR = prefs.getBoolean("posts.UsePR", false);
-        m_UseVolumesScroll = prefs.getBoolean("theme.UseVolumesScroll", false);
     }
 
     private void configWebView() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        loadPreferences(prefs);
+
         mWvBody.getSettings().setJavaScriptEnabled(false);
         mWvBody.getSettings().setJavaScriptCanOpenWindowsAutomatically(false);
         mWvBody.getSettings().setDomStorageEnabled(true);
@@ -137,16 +146,9 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
         mWvBody.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
         mWvBody.setScrollbarFadingEnabled(false);
 
-        mWvBody.setBackgroundColor(MyApp.INSTANCE.getThemeStyleWebViewBackground());
-        mWvBody.getSettings().setLoadsImagesAutomatically(prefs.getBoolean("theme.LoadsImagesAutomatically", true));
-        mWvBody.setKeepScreenOn(prefs.getBoolean("theme.KeepScreenOn", false));
 
-        mWvBody.getSettings().setBuiltInZoomControls(m_UseZoom);
-        mWvBody.getSettings().setSupportZoom(m_UseZoom);
 
-        int sdk = new Integer(Build.VERSION.SDK).intValue();
-        if (sdk > 7)
-            mWvBody.getSettings().setPluginState(WebSettings.PluginState.ON);
+        setWebViewSettings();
         mWvBody.setWebViewClient(new MyWebViewClient());
     }
 
@@ -194,6 +196,16 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
         return m_Mail;
     }
 
+    @Override
+    public String Prefix() {
+        return "theme";  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public WebView getWebView() {
+        return mWvBody;
+    }
+
     private class MyWebViewClient extends WebViewClient {
 
         @Override
@@ -218,6 +230,18 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
             setHasOptionsMenu(true);
         }
 
+        private Boolean m_FirstTime=true;
+        @Override
+        public void onPrepareOptionsMenu(com.actionbarsherlock.view.Menu menu) {
+            if(!m_FirstTime)
+                getInterface().onPrepareOptionsMenu();
+            m_FirstTime=false;
+        }
+
+        private MailActivity getInterface() {
+            return (MailActivity)getActivity();
+        }
+
         @Override
         public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
             com.actionbarsherlock.view.MenuItem item = menu.add("Ответить").setIcon(R.drawable.reply);
@@ -225,13 +249,11 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
                     MailActivity activity=(MailActivity)getActivity();
                     if(activity.getMail()==null)return false;
-                    Intent intent = new Intent(getActivity(), EditMailActivity.class);
 
-                    intent.putExtra(EditMailActivity.KEY_PARAMS, "CODE=04&act=Msg&MID=" + activity.getMail().getUserId() + "&MSID=" + activity.getMail().getId());
-                    intent.putExtra(EditMailActivity.KEY_USER, activity.getMail().getUser());
-                    intent.putExtra(EditMailActivity.KEY_REPLY, true);
-                    intent.putExtra(EditMailActivity.KEY_TITLE, activity.getMail().getTheme());
-                    startActivity(intent);
+                    EditMailActivity.reply(getActivity(),
+                            "CODE=04&act=Msg&MID=" + activity.getMail().getUserId() + "&MSID=" + activity.getMail().getId(),
+                            activity.getMail().getUser(),
+                            activity.getMail().getTheme());
                     return true;
                 }
             });
@@ -263,6 +285,15 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 }
             });
 
+            item = menu.add("Закрыть").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                    getActivity().finish();
+
+                    return true;
+                }
+            });
+
             //item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
 
         }
@@ -270,14 +301,14 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
 
     private class LoadTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+        
         private final ProgressDialog dialog;
         public String Post;
 
 
         public LoadTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+           
+            dialog = new ProgressDialog(context);
         }
 
         @Override
@@ -286,7 +317,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 m_Mail = Mail.load(params[0]);
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -299,7 +330,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -318,7 +349,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 if (ex != null)
                     Log.e(MailActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(MailActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }
@@ -328,14 +359,14 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
 
     public class DeleteTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
         public String Post;
 
 
         public DeleteTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+           
+            dialog = new ProgressDialog(context);
         }
 
         @Override
@@ -344,7 +375,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 m_Mail.delete();
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -357,7 +388,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -374,7 +405,7 @@ public class MailActivity extends BaseFragmentActivity implements MailActivityIn
                 if (ex != null)
                     Log.e(MailActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(MailActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }

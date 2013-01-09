@@ -58,11 +58,11 @@ public class EditMailActivity extends BaseFragmentActivity {
     public static final String KEY_FROM_EDIT = "from_edit";
     public static final String KEY_RETERN_BACK = "retrun_back";
     private String m_AttachPostKey="";
-    private LinearLayout lnrBbCodes;
+    private Gallery glrBbCodes;
     private EditText txtPost, entered_name, msg_title;
-    private Button btnAddRecipient, btnRecipients;
+    private Button btnRecipients;
     // подтверждение отправки
-    private Boolean m_ConfirmSend = true, mReturnBack=false;
+    private Boolean  mReturnBack=false;
     private CheckBox mt_hide_cc, add_sent, add_tracking;
     MenuFragment mFragment1;
     Handler mHandler = new Handler();
@@ -74,11 +74,11 @@ public class EditMailActivity extends BaseFragmentActivity {
 
         createMenu();
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        m_ConfirmSend = prefs.getBoolean("theme.ConfirmSend", true);
 
-        lnrBbCodes = (LinearLayout) findViewById(R.id.lnrBbCodes);
+
+        glrBbCodes = (Gallery) findViewById(R.id.glrBbCodes);
         txtPost = (EditText) findViewById(R.id.txtPost);
-        new BbCodesPanel(this, lnrBbCodes, txtPost);
+        new BbCodesPanel(this, glrBbCodes, txtPost);
 
         mt_hide_cc = (CheckBox) findViewById(R.id.mt_hide_cc);
         add_sent = (CheckBox) findViewById(R.id.add_sent);
@@ -87,18 +87,13 @@ public class EditMailActivity extends BaseFragmentActivity {
         entered_name = (EditText) findViewById(R.id.entered_name);
         msg_title = (EditText) findViewById(R.id.msg_title);
 
-        btnRecipients = (Button) findViewById(R.id.btnRecipients);
-        btnRecipients.setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btnRecipients).setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 showRecipientsListDialog();
             }
         });
 
-        findViewById(R.id.btnAddRecipient).setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                showAddRecipientDialog();
-            }
-        });
+        btnRecipients=(Button)findViewById(R.id.btnRecipients);
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -142,6 +137,15 @@ public class EditMailActivity extends BaseFragmentActivity {
         intent.putExtra(EditMailActivity.KEY_RETERN_BACK, returnBack);
         activity.startActivity(intent);
     }
+
+    public static void reply(Activity activity,String params, String userNick, String title){
+        Intent intent = new Intent(activity, EditMailActivity.class);
+        intent.putExtra(EditMailActivity.KEY_PARAMS, params);
+        intent.putExtra(EditMailActivity.KEY_USER, userNick);
+        intent.putExtra(EditMailActivity.KEY_REPLY, true);
+        intent.putExtra(EditMailActivity.KEY_TITLE, title);
+        activity.startActivity(intent);
+    }
     
     private void showAddRecipientDialog() {
 
@@ -176,8 +180,8 @@ public class EditMailActivity extends BaseFragmentActivity {
     }
 
     private void updateRecipientsInfo() {
-        btnRecipients.setText("Копии пользователям (" + m_Recipients.size() + ")");
-        mt_hide_cc.setVisibility(m_Recipients.size() > 0 ? View.VISIBLE : View.GONE);
+        btnRecipients.setText(m_Recipients.size()+"");
+         mt_hide_cc.setVisibility(m_Recipients.size() > 0 ? View.VISIBLE : View.GONE);
     }
 
     private Dialog mRecipientsListDialog;
@@ -185,15 +189,27 @@ public class EditMailActivity extends BaseFragmentActivity {
 
     private void showRecipientsListDialog() {
         if (m_Recipients.size() == 0) {
-            Toast.makeText(this, "Ни одного получателя не добавлено", Toast.LENGTH_SHORT).show();
-            return;
+//            Toast.makeText(this, "Ни одного получателя не добавлено", Toast.LENGTH_SHORT).show();
+//            return;
         }
 
         RecipientsAdapter adapter = new RecipientsAdapter(m_Recipients, this);
 
         mRecipientsListDialog = new AlertDialog.Builder(this)
                 .setCancelable(true)
+                .setTitle("Получатели")
                 .setSingleChoiceItems(adapter, -1, null)
+                .setPositiveButton("Добавить",new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                        showAddRecipientDialog();
+                    }
+                })
+                .setNegativeButton("Закрыть",new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
                 .create();
         mRecipientsListDialog.show();
     }
@@ -429,7 +445,7 @@ public class EditMailActivity extends BaseFragmentActivity {
 
     private class SendTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
 
         String enteredName;
@@ -446,7 +462,7 @@ public class EditMailActivity extends BaseFragmentActivity {
                         String postBody,
                         Boolean addSent,
                         Boolean addTracking, ArrayList<String> recipients) {
-            mContext = context;
+          
             this.enteredName = enteredName;
             this.mtHideCc = mtHideCc;  //!
             this.msgTitle = msgTitle;
@@ -454,10 +470,10 @@ public class EditMailActivity extends BaseFragmentActivity {
             this.addSent = addSent;
             this.addTracking = addTracking;
             this.recipients = recipients;
-            dialog = new ProgressDialog(mContext);
+            dialog = new ProgressDialog(context);
         }
 
-        private void send() throws IOException {
+        private void send() throws Throwable {
             Map<String, String> additionalHeaders = new HashMap<String, String>();
             additionalHeaders.put("act", "Msg");
             if (addSent)
@@ -496,7 +512,7 @@ public class EditMailActivity extends BaseFragmentActivity {
                 send();
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -509,7 +525,7 @@ public class EditMailActivity extends BaseFragmentActivity {
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -532,7 +548,7 @@ public class EditMailActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditMailActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(EditMailActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }
@@ -542,7 +558,7 @@ public class EditMailActivity extends BaseFragmentActivity {
 
     private class LoadTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+        
         private final ProgressDialog dialog;
 
         private String m_Params;
@@ -550,11 +566,11 @@ public class EditMailActivity extends BaseFragmentActivity {
 
         public LoadTask(Context context,
                         String params, String user, String title) {
-            mContext = context;
+
             m_Params = params;
             enteredName = user;
             msgTitle = title;
-            dialog = new ProgressDialog(mContext);
+            dialog = new ProgressDialog(context);
         }
 
         String enteredName = "";
@@ -589,7 +605,7 @@ public class EditMailActivity extends BaseFragmentActivity {
                 parseBody(body);
 
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -602,7 +618,7 @@ public class EditMailActivity extends BaseFragmentActivity {
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -624,7 +640,7 @@ public class EditMailActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditMailActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(EditMailActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }

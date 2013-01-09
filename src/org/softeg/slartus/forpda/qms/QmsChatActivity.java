@@ -87,7 +87,7 @@ public class QmsChatActivity extends BaseFragmentActivity {
 
     }
     
-    public static void openChat(Activity activity,String userId, String userNick){
+    public static void openChat(Context activity,String userId, String userNick){
         Intent intent = new Intent(activity, QmsChatActivity.class);
         intent.putExtra("UserId", userId);
         intent.putExtra("UserNick", userNick);
@@ -157,13 +157,13 @@ public class QmsChatActivity extends BaseFragmentActivity {
             }
         });
         String chatBody = null;
-        Exception ex = null;
+        Throwable ex = null;
         try {
             chatBody = transformChatBody(Qms.getChat(Client.INSTANCE, m_Id, m_MessagesCount));
-        } catch (IOException e) {
+        } catch (Throwable e) {
             ex = e;
         }
-        final Exception finalEx = ex;
+        final Throwable finalEx = ex;
         final String finalChatBody = chatBody;
         uiHandler.post(new Runnable() {
             public void run() {
@@ -221,14 +221,14 @@ public class QmsChatActivity extends BaseFragmentActivity {
 
     private class SendTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+      
         private final ProgressDialog dialog;
         public String m_ChatBody;
 
 
         public SendTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+            
+            dialog = new ProgressDialog(context);
         }
 
         @Override
@@ -266,7 +266,7 @@ public class QmsChatActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(QmsChatActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(QmsChatActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
             }
         }

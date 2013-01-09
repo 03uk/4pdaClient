@@ -22,12 +22,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
-import com.lamerman.FileDialog;
 import org.softeg.slartus.forpda.classes.BbCodesPanel;
 import org.softeg.slartus.forpda.classes.common.FileUtils;
 import org.softeg.slartus.forpda.common.HtmlUtils;
 import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.emotic.SmilesBbCodePanel;
+import org.softeg.slartus.forpda.topicview.ThemeActivity;
 import org.softeg.slartus.forpdaapi.Post;
 
 import java.util.ArrayList;
@@ -39,14 +42,15 @@ import java.util.regex.Pattern;
  * Date: 08.11.11
  * Time: 12:42
  */
-public class EditPostPlusActivity extends BaseFragmentActivity {
-    private LinearLayout lnrBbCodes;
+public class EditPostPlusActivity extends SherlockFragmentActivity {
+    private Button tglGallerySwitcher;
+    private Gallery glrSmiles, glrBbCodes;
     private EditText txtPost;
-    private CheckBox chkEnablesig, chkEnableEmo;
-    private Button btnSelectFile;
-    private Button  btnAddFile;
+    private ToggleButton tglEnableEmo, tglEnableSig;
+    private Button btnAttachments;
+
     private String forumId;
-    private String attachFilePath;
+    private String m_AttachFilePath;
     private String lastSelectDirPath = "/sdcard";
     private String themeId;
     private String postId;
@@ -61,66 +65,58 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
     private int REQUEST_SAVE_IMAGE = 1;
     private MenuFragment mFragment1;
     private String postText;
+    private View m_BottomPanel;
+    public static void editPost(Context context, String forumId, String topicId, String postId, String authKey) {
+        Intent intent = new Intent(context, EditPostPlusActivity.class);
+
+        intent.putExtra("forumId", forumId);
+        intent.putExtra("themeId", topicId);
+        intent.putExtra("postId", postId);
+        intent.putExtra("authKey", authKey);
+        context.startActivity(intent);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-//        getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        //getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+
 //        setTheme(MyApp.INSTANCE.getThemeStyleResID());
         setContentView(R.layout.edit_post_plus);
 
+//        if (getResources().getBoolean(R.bool.screen_small))
+//            getSupportActionBar().hide();
+
         createActionMenu();
+
         lastSelectDirPath = prefs.getString("EditPost.AttachDirPath", lastSelectDirPath);
         m_ConfirmSend = prefs.getBoolean("theme.ConfirmSend", true);
-
-        lnrBbCodes = (LinearLayout) findViewById(R.id.lnrBbCodes);
+        m_BottomPanel=findViewById(R.id.bottomPanel);
+        glrBbCodes = (Gallery) findViewById(R.id.glrBbCodes);
+        glrSmiles = (Gallery) findViewById(R.id.glrSmiles);
         txtPost = (EditText) findViewById(R.id.txtPost);
-        new BbCodesPanel(this,lnrBbCodes,txtPost);
-        chkEnablesig = (CheckBox) findViewById(R.id.chkEnablesig);
-        chkEnableEmo = (CheckBox) findViewById(R.id.chkEnableEmo);
+        new BbCodesPanel(this, glrBbCodes, txtPost);
+        new SmilesBbCodePanel(this, glrSmiles, txtPost);
 
-        btnSelectFile = (Button) findViewById(R.id.btnSelectFile);
-        btnSelectFile.setOnClickListener(new View.OnClickListener() {
+        tglGallerySwitcher = (Button) findViewById(R.id.tglGallerySwitcher);
+        tglGallerySwitcher.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                showAttachesListDialog();
+                glrBbCodes.setVisibility(glrBbCodes.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+                glrSmiles.setVisibility(glrSmiles.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+                tglGallerySwitcher.setText(glrBbCodes.getVisibility() == View.VISIBLE ? ":)" : "Bb");
             }
         });
+        tglEnableSig = (ToggleButton) findViewById(R.id.tglEnableSig);
+        tglEnableEmo = (ToggleButton) findViewById(R.id.tglEnableEmo);
 
-        btnAddFile = (Button) findViewById(R.id.btnAddFile);
-        btnAddFile.setOnClickListener(new View.OnClickListener() {
+        btnAttachments = (Button) findViewById(R.id.btnAttachments);
+        btnAttachments.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                if (TextUtils.isEmpty(txtPost.getText().toString())) {
-                    Toast.makeText(EditPostPlusActivity.this, "Вы должны ввести сообщение", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-
-                CharSequence[] items=new CharSequence[]{"Файл","Изображение"};
-                new AlertDialog
-                        .Builder(EditPostPlusActivity.this)
-                        .setSingleChoiceItems(items,-1,new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.dismiss();
-                                switch (i){
-                                    case 0://файл
-                                        Intent intent = new Intent(EditPostPlusActivity.this.getBaseContext(),
-                                                FileDialog.class);
-                                        intent.putExtra(FileDialog.START_PATH, lastSelectDirPath);
-                                        EditPostPlusActivity.this.startActivityForResult(intent, REQUEST_SAVE);
-                                        break;
-                                    case 1:// Изображение
-                                        Intent imageintent = new Intent(
-                                                Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-
-                                        startActivityForResult(imageintent,  REQUEST_SAVE_IMAGE);
-                                        break;
-                                }
-                            }
-                        }).create().show();
-
-                
+                showAttachesListDialog();
             }
         });
 
@@ -148,6 +144,44 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         ft.commit();
     }
 
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//
+//        menu.add("Отправить")
+//                .setIcon(android.R.drawable.ic_menu_send)
+//                .setOnMenuItemClickListener(new android.view.MenuItem.OnMenuItemClickListener() {
+//
+//                    public boolean onMenuItemClick(android.view.MenuItem item) {
+//
+//                        final String body = getPostText();
+//                        if (TextUtils.isEmpty(body))
+//                            return true;
+//
+//                        if (getConfirmSend()) {
+//                            new AlertDialog.Builder(EditPostPlusActivity.this)
+//                                    .setTitle("Уверены?")
+//                                    .setMessage("Подтвердите отправку")
+//                                    .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
+//                                        public void onClick(DialogInterface dialogInterface, int i) {
+//                                            dialogInterface.dismiss();
+//                                            sendPost(body);
+//
+//                                        }
+//                                    })
+//                                    .setNegativeButton("Отмена", null)
+//                                    .create().show();
+//                        } else {
+//                            sendPost(body);
+//                        }
+//
+//                        return true;
+//                    }
+//                });
+//
+//
+//        return super.onCreateOptionsMenu(menu);
+//    }
+
     private Boolean isNewPost() {
         return postId.equals("-1");
     }
@@ -155,10 +189,10 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
     private Dialog mAttachesListDialog;
 
     private void showAttachesListDialog() {
-        if (attaches.size() == 0) {
-            Toast.makeText(this, "Ни одного файла не загружено", Toast.LENGTH_SHORT).show();
-            return;
-        }
+//        if (attaches.size() == 0) {
+//            Toast.makeText(this, "Ни одного файла не загружено", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
         String[] caps = new String[attaches.size()];
         int i = 0;
         for (Attach attach : attaches) {
@@ -168,52 +202,101 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         //  ListAdapter adapter = new ArrayAdapter<Attach>(this, R.layout.attachment_spinner_item, attaches);
         mAttachesListDialog = new AlertDialog.Builder(this)
                 .setCancelable(true)
+                .setTitle("Вложения")
                 .setSingleChoiceItems(adapter, -1, null)
+                .setPositiveButton("Добавить", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        startAddAttachment();
+                    }
+                })
+                .setNegativeButton("Закрыть", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
                 .create();
         mAttachesListDialog.show();
+    }
+
+    private void startAddAttachment() {
+        if (TextUtils.isEmpty(txtPost.getText().toString())) {
+            Toast.makeText(EditPostPlusActivity.this, "Вы должны ввести сообщение", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+
+        CharSequence[] items = new CharSequence[]{"Файл", "Изображение"};
+        new AlertDialog
+                .Builder(EditPostPlusActivity.this)
+                .setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        switch (i) {
+                            case 0://файл
+                                Intent intent = new Intent();
+                                intent.setAction(Intent.ACTION_GET_CONTENT);
+                                intent.setType("file/*");
+                                intent.setDataAndType(Uri.parse("file:/" + lastSelectDirPath), "file/*");
+                                startActivityForResult(intent, REQUEST_SAVE);
+
+//                                Intent intent = new Intent(EditPostPlusActivity.this.getBaseContext(),
+//                                        FileDialog.class);
+//                                intent.putExtra(FileDialog.START_PATH, lastSelectDirPath);
+//                                EditPostPlusActivity.this.startActivityForResult(intent, REQUEST_SAVE);
+                                break;
+                            case 1:// Изображение
+                                Intent imageintent = new Intent(
+                                        Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+                                startActivityForResult(imageintent, REQUEST_SAVE_IMAGE);
+                                break;
+                        }
+                    }
+                }).create().show();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        try{
+        try {
             if (resultCode == RESULT_OK) {
 
                 if (requestCode == REQUEST_SAVE) {
-                    attachFilePath = data.getStringExtra(FileDialog.RESULT_PATH);
+//                    m_AttachFilePath = data.getStringExtra(FileDialog.RESULT_PATH);
+                     m_AttachFilePath = data.getData().getPath();
 
                     saveAttachDirPath();
 
-                    m_Enablesig = chkEnablesig.isChecked();
-                    m_EnableEmo = chkEnableEmo.isChecked();
+                    m_Enablesig = tglEnableSig.isChecked();
+                    m_EnableEmo = tglEnableEmo.isChecked();
                     new UpdateTask(EditPostPlusActivity.this).execute(txtPost.getText().toString());
-                }
-                else if (requestCode ==REQUEST_SAVE_IMAGE) {
+                } else if (requestCode == REQUEST_SAVE_IMAGE) {
 
                     Uri selectedImage = data.getData();
-                    String[] filePathColumn = { MediaStore.Images.Media.DATA };
+                    String[] filePathColumn = {MediaStore.Images.Media.DATA};
 
                     Cursor cursor = getContentResolver().query(selectedImage,
                             filePathColumn, null, null, null);
                     cursor.moveToFirst();
 
                     int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                    attachFilePath = cursor.getString(columnIndex);
+                    m_AttachFilePath = cursor.getString(columnIndex);
                     cursor.close();
 
-                    m_Enablesig = chkEnablesig.isChecked();
-                    m_EnableEmo = chkEnableEmo.isChecked();
+                    m_Enablesig = tglEnableSig.isChecked();
+                    m_EnableEmo = tglEnableEmo.isChecked();
                     new UpdateTask(EditPostPlusActivity.this).execute(txtPost.getText().toString());
                 }
             }
-        }catch (Exception ex){
-            Log.e(this,ex);
+        } catch (Exception ex) {
+            Log.e(this, ex);
         }
 
     }
 
     private void saveAttachDirPath() {
-        lastSelectDirPath = FileUtils.getDirPath(attachFilePath);
+        lastSelectDirPath = FileUtils.getDirPath(m_AttachFilePath);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("EditPost.AttachDirPath", lastSelectDirPath);
@@ -225,8 +308,8 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
     }
 
     private void sendPost(final String text) {
-        m_Enablesig = chkEnablesig.isChecked();
-        m_EnableEmo = chkEnableEmo.isChecked();
+        m_Enablesig = tglEnableSig.isChecked();
+        m_EnableEmo = tglEnableEmo.isChecked();
         if (isNewPost()) {
             new PostTask(EditPostPlusActivity.this).execute(text);
         } else {
@@ -257,7 +340,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         Pattern pattern = Pattern.compile("onclick=\"insText\\('\\[attachment=(\\d+):(.*?)\\]'\\)");
         Pattern attachBodyPattern = Pattern.compile("<!-- ATTACH -->([\\s\\S]*?)</i>", Pattern.MULTILINE);
         Matcher m = attachBodyPattern.matcher(body);
-        attaches =new Attaches();
+        attaches = new Attaches();
         if (m.find()) {
             Matcher m1 = pattern.matcher(m.group(1));
             while (m1.find()) {
@@ -272,7 +355,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 Toast.makeText(this, m.group(1), Toast.LENGTH_LONG).show();
             }
         }
-        btnSelectFile.setText("Управление текущими файлами (" + attaches.size() + ")");
+        btnAttachments.setText(attaches.size() + "");
 
     }
 
@@ -284,80 +367,82 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         return m_ConfirmSend;
     }
 
-    public static final class MenuFragment extends SherlockFragment {
-        public MenuFragment() {
-            super();
-        }
 
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            setHasOptionsMenu(true);
-        }
-
-        @Override
-        public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
-            super.onCreateOptionsMenu(menu, inflater);
-            com.actionbarsherlock.view.MenuItem item;
-
-            item = menu.add("Отправить").setIcon(android.R.drawable.ic_menu_send);
-            item.setVisible(Client.INSTANCE.getLogined());
-            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
-                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                    return sendMail();
-                }
-            });
-            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-            item = menu.add("Отправить").setIcon(android.R.drawable.ic_menu_send);
-            item.setVisible(Client.INSTANCE.getLogined());
-            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
-                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                    return sendMail();
-                }
-            });
-            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-
-        }
-        
-        private boolean sendMail(){
-            final String body = ((EditPostPlusActivity)getActivity()).getPostText();
-            if (TextUtils.isEmpty(body))
-                return true;
-
-            if (((EditPostPlusActivity)getActivity()).getConfirmSend()) {
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("Уверены?")
-                        .setMessage("Подтвердите отправку")
-                        .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.dismiss();
-                                ((EditPostPlusActivity)getActivity()).sendPost(body);
-
-                            }
-                        })
-                        .setNegativeButton("Отмена", null)
-                        .create().show();
-            } else {
-                ((EditPostPlusActivity)getActivity()).sendPost(body);
-            }
-
-            return true;
-        }
-
-        public NewsActivity getInterface() {
-            return (NewsActivity)getActivity();
-        }
-    }
+//
+//    public static final class MenuFragment extends SherlockFragment {
+//        public MenuFragment() {
+//            super();
+//        }
+//
+//        @Override
+//        public void onCreate(Bundle savedInstanceState) {
+//            super.onCreate(savedInstanceState);
+//            setHasOptionsMenu(true);
+//        }
+//
+//        @Override
+//        public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+//            super.onCreateOptionsMenu(menu, inflater);
+//            com.actionbarsherlock.view.MenuItem item;
+//
+////            item = menu.add("Отправить").setIcon(android.R.drawable.ic_menu_send);
+////            //item.setVisible(Client.INSTANCE.getLogined());
+////            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+////                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+////                    return sendMail();
+////                }
+////            });
+////            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+//
+//            item = menu.add("Отправить").setIcon(android.R.drawable.ic_menu_send);
+//            //item.setVisible(Client.INSTANCE.getLogined());
+//            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+//                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+//                    return sendMail();
+//                }
+//            });
+//            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+//
+//        }
+//
+//        private boolean sendMail() {
+//            final String body = ((EditPostPlusActivity) getActivity()).getPostText();
+//            if (TextUtils.isEmpty(body))
+//                return true;
+//
+//            if (((EditPostPlusActivity) getActivity()).getConfirmSend()) {
+//                new AlertDialog.Builder(getActivity())
+//                        .setTitle("Уверены?")
+//                        .setMessage("Подтвердите отправку")
+//                        .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
+//                            public void onClick(DialogInterface dialogInterface, int i) {
+//                                dialogInterface.dismiss();
+//                                ((EditPostPlusActivity) getActivity()).sendPost(body);
+//
+//                            }
+//                        })
+//                        .setNegativeButton("Отмена", null)
+//                        .create().show();
+//            } else {
+//                ((EditPostPlusActivity) getActivity()).sendPost(body);
+//            }
+//
+//            return true;
+//        }
+//
+//        public NewsActivity getInterface() {
+//            return (NewsActivity) getActivity();
+//        }
+//    }
 
     private class UpdateTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+        
         private final ProgressDialog dialog;
 
         public UpdateTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
         }
 
         String body;
@@ -366,7 +451,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         protected Boolean doInBackground(String... params) {
             try {
                 body = Client.INSTANCE.attachFilePost(forumId, themeId, authKey, attachPostKey,
-                        postId, m_Enablesig,m_EnableEmo, params[0], attachFilePath,attaches.getFileList());
+                        postId, m_Enablesig, m_EnableEmo, params[0], m_AttachFilePath, attaches.getFileList());
                 return true;
             } catch (Exception e) {
                 ex = e;
@@ -395,7 +480,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditPostPlusActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EditPostPlusActivity.this, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
 
             }
         }
@@ -404,12 +489,12 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
 
     private class DeleteTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
 
         public DeleteTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
         }
 
         String body;
@@ -417,9 +502,9 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         @Override
         protected Boolean doInBackground(String... params) {
             try {
-                body = Client.INSTANCE.deleteAttachFilePost(forumId, themeId, authKey, postId, m_Enablesig,m_EnableEmo,
+                body = Client.INSTANCE.deleteAttachFilePost(forumId, themeId, authKey, postId, m_Enablesig, m_EnableEmo,
                         params[0],
-                        attachFilePath, attaches.getFileList());
+                        m_AttachFilePath, attaches.getFileList());
                 return true;
             } catch (Exception e) {
                 ex = e;
@@ -448,7 +533,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditPostPlusActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EditPostPlusActivity.this, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
 
             }
         }
@@ -457,19 +542,19 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
 
     private class AcceptEditTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+      
         private final ProgressDialog dialog;
 
         public AcceptEditTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
         }
 
         @Override
         protected Boolean doInBackground(String... params) {
             try {
                 Client.INSTANCE.editPost(forumId, themeId, authKey, postId, m_Enablesig, m_EnableEmo,
-                        params[0],attaches.getFileList());
+                        params[0], attaches.getFileList());
                 return true;
             } catch (Exception e) {
 
@@ -500,7 +585,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditPostPlusActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(EditPostPlusActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }
@@ -510,12 +595,12 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
 
     private class LoadTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+   
         private final ProgressDialog dialog;
 
         public LoadTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
         }
 
         String body;
@@ -525,7 +610,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
             try {
                 body = Client.INSTANCE.getEditPostPlus(forumId, themeId, postId, authKey);
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
 
                 ex = e;
                 return false;
@@ -538,7 +623,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
             this.dialog.show();
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         // can use UI thread here
         protected void onPostExecute(final Boolean success) {
@@ -552,7 +637,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditPostPlusActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EditPostPlusActivity.this, "Неизвестная ошибка", Toast.LENGTH_SHORT).show();
 
             }
         }
@@ -561,13 +646,14 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
 
     private class PostTask extends AsyncTask<String, Void, Boolean> {
 
-        Context mContext;
+     
         private final ProgressDialog dialog;
         private String mPostResult = null;
         private String mError = null;
+
         public PostTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+
+            dialog = new ProgressDialog(context);
         }
 
 
@@ -575,9 +661,9 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
         protected Boolean doInBackground(String... params) {
             try {
                 mPostResult = Client.INSTANCE.reply(forumId, themeId, authKey, attachPostKey,
-                        params[0], m_Enablesig, m_EnableEmo,false,attaches.getFileList());
+                        params[0], m_Enablesig, m_EnableEmo, false, attaches.getFileList());
 
-                mError= Post.checkPostErrors(mPostResult);
+                mError = Post.checkPostErrors(mPostResult);
                 return true;
             } catch (Exception e) {
 
@@ -602,7 +688,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
 
             if (success) {
                 if (!TextUtils.isEmpty(mError)) {
-                    Toast.makeText(mContext, "Ошибка: " + mError, Toast.LENGTH_LONG).show();
+                    Toast.makeText(EditPostPlusActivity.this, "Ошибка: " + mError, Toast.LENGTH_LONG).show();
                     return;
                 }
                 ThemeActivity.s_ThemeBody = mPostResult;
@@ -616,7 +702,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                 if (ex != null)
                     Log.e(EditPostPlusActivity.this, ex);
                 else
-                    Toast.makeText(mContext, "Неизвестная ошибка",
+                    Toast.makeText(EditPostPlusActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
 
             }
@@ -667,7 +753,7 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
                         mAttachesListDialog.dismiss();
 
                         Attach attach = (Attach) view.getTag();
-                        attachFilePath = attach.getId();
+                        m_AttachFilePath = attach.getId();
                         new DeleteTask(EditPostPlusActivity.this).execute(txtPost.getText().toString());
                     }
                 });
@@ -729,13 +815,103 @@ public class EditPostPlusActivity extends BaseFragmentActivity {
     }
 
     private class Attaches extends ArrayList<Attach> {
-        public String getFileList(){
-            String res="0";
+        public String getFileList() {
+            String res = "0";
             for (Attach attach : this) {
-                res += ","+attach.getId();
+                res += "," + attach.getId();
             }
             return res;
         }
     }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        if (!getSupportActionBar().isShowing()) {
+            getSupportActionBar().show();
+            m_BottomPanel.setVisibility(View.VISIBLE);
+//            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+//            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        }
+        return true;
+    }
+    
+    public void hidePanels(){
+        getSupportActionBar().hide();
+        m_BottomPanel.setVisibility(View.GONE);
+    }
+
+    public static final class MenuFragment extends SherlockFragment {
+        public MenuFragment() {
+            super();
+        }
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setHasOptionsMenu(true);
+//            if (getResources().getBoolean(R.bool.screen_small))
+//                getInterface().getSupportActionBar().hide();
+        }
+
+        @Override
+        public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+            super.onCreateOptionsMenu(menu, inflater);
+            com.actionbarsherlock.view.MenuItem item;
+
+            item = menu.add("Отправить").setIcon(android.R.drawable.ic_menu_send);
+            //item.setVisible(Client.INSTANCE.getLogined());
+            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                    return sendMail();
+                }
+            });
+            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+
+
+            item = menu.add("Скрыть панели").setIcon(R.drawable.ic_media_fullscreen);
+            //item.setVisible(Client.INSTANCE.getLogined());
+            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                     getInterface().hidePanels();
+//                    getInterface().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//                    getInterface().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+                    return true;
+                }
+            });
+
+            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        }
+
+        private boolean sendMail() {
+            final String body = ((EditPostPlusActivity) getActivity()).getPostText();
+            if (TextUtils.isEmpty(body))
+                return true;
+
+            if (((EditPostPlusActivity) getActivity()).getConfirmSend() ) {
+                new AlertDialog.Builder(getActivity())
+                        .setTitle("Уверены?")
+                        .setMessage("Подтвердите отправку")
+                        .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                                ((EditPostPlusActivity) getActivity()).sendPost(body);
+
+                            }
+                        })
+                        .setNegativeButton("Отмена", null)
+                        .create().show();
+            } else {
+                ((EditPostPlusActivity) getActivity()).sendPost(body);
+            }
+
+            return true;
+        }
+
+        public EditPostPlusActivity getInterface() {
+            return (EditPostPlusActivity) getActivity();
+        }
+    }
+
 }
 

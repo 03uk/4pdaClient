@@ -13,7 +13,7 @@ function toggleSpoilerVisibility(obj){
 
 function scrollToElement(id) {
 
-    var el = elem(id);
+    var el = elemByName(id);
     var x = 0;
     var y = 0;
 
@@ -78,8 +78,6 @@ function advPost(){
 
 };
 
-var tags=new Array("b","i","u","s","left","center","right","quote","mod","ex");
-var itags=new Array();
 function insertText(text)
 {
 	var textarea_obj = elem ( "Post" );
@@ -99,34 +97,24 @@ function postQuote(postId, date, userNick){
 	return insertText("[quote name='" + userNick + "' date='" + date + "' post='" + postId + "']\n" + text + "\n[/quote]" );
 }
 
-function addtag(id)
-{
-	var textarea_obj = elem ( "Post" );
-	var n=-1;
-	for(i=0;i<tags.length;i++)
-	{
-		if(tags[i]==id)n=i;
-	}
-	if(n!=-1)
-	{
-		if(itags[n]!=1)
-		{
-			itags[n]=1;
-			textarea_obj.value+="["+id+"]";
-		}else{
-			itags[n]=0;
-			textarea_obj.value+="[/"+id+"]";
-		}
-	}
-	return false;
-}
+
 function elem ( id )
 {
-	if ( isdef ( typeof ( document.getElementById ) ) ) return document.getElementById ( id );
-	else if ( isdef ( typeof ( document.all ) ) ) return document.all [ id ];
-	else if ( isdef ( typeof ( document.layers ) ) ) return document [ id ];
+    if ( isdef ( typeof ( document.getElementById ) ) ) return document.getElementById(id);
+    else if ( isdef ( typeof ( document.all ) ) ) return document.all [ id ];
+    else if ( isdef ( typeof ( document.layers ) ) ) return document [ id ];
+    else return null;
+}
+
+
+function elemByName ( name )
+{
+	if ( isdef ( typeof ( document.getElementsByName ) ) ) return document.getElementsByName(name)[0];
+	else if ( isdef ( typeof ( document.all ) ) ) return document.all [ name ];
+	else if ( isdef ( typeof ( document.layers ) ) ) return document [ name ];
 	else return null;
 }
+
 function isdef ( typestr )
 {
 	return ( ( typestr != "undefined" ) && ( typestr != "unknown" ) ) ? true : false;

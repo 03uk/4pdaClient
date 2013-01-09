@@ -18,7 +18,9 @@ public class Forums extends ArrayList<Forum> {
      * @return
      * @throws Exception
      */
-    public static  Forum loadForums(IHttpClient httpClient) throws Exception {
+    public static  Forum loadForums(IHttpClient httpClient) throws Exception, NotReportException {
+
+
         Forum mainForum= new Forum("-1", "4PDA");
         byte tryCount=3;// Не всегда загружается в текстовом режиме. будем пробовать 3 раза.
         Boolean regimeChecked = false;
@@ -59,7 +61,7 @@ public class Forums extends ArrayList<Forum> {
         return mainForum;
     }
     
-    public static void markAllAsRead(IHttpClient httpClient) throws Exception{
+    public static void markAllAsRead(IHttpClient httpClient) throws Throwable{
         httpClient.performGet("http://4pda.ru/forum/index.php?act=Login&CODE=05");
     }
 }

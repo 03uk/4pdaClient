@@ -2,7 +2,7 @@ package org.softeg.slartus.forpda.Mail.classes;
 
 import android.text.Html;
 import org.softeg.slartus.forpda.Client;
-import org.softeg.slartus.forpda.EditPostActivity;
+import org.softeg.slartus.forpda.EditPost;
 import org.softeg.slartus.forpda.classes.Exceptions.AdditionalInfoException;
 import org.softeg.slartus.forpda.classes.common.Functions;
 import org.softeg.slartus.forpdaapi.NotReportException;
@@ -79,7 +79,7 @@ public class Mail {
         return this.date;
     }
 
-    public static Mail load(String url) throws Exception {
+    public static Mail load(String url) throws Throwable {
         String body = Client.INSTANCE.performGet(url);
         Matcher errorMatcher = Pattern.compile("<div class=\"errorwrap\">\n" +
                 "\\s*<h4>Причина:</h4>\n" +
@@ -134,7 +134,7 @@ public class Mail {
         sb.append("<html xml:lang=\"en\" lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\">\n");
         sb.append("<head>\n");
         sb.append("<meta http-equiv=\"content-type\" content=\"text/html; charset=windows-1251\" />\n");
-        EditPostActivity.addStyleSheetLink(sb);
+        EditPost.addStyleSheetLink(sb);
         sb.append("<script type=\"text/javascript\" src=\"file:///android_asset/theme.js\"></script>\n");
         sb.append("<script type=\"text/javascript\" src=\"file:///android_asset/blockeditor.js\"></script>\n");
         sb.append("<title>" + getTheme() + "</title>\n");
@@ -145,7 +145,7 @@ public class Mail {
         return sb.toString();
     }
 
-    public void delete() throws IOException {
+    public void delete() throws Throwable {
         String res= Client.INSTANCE.performGet("http://4pda.ru/forum/index.php?CODE=05&act=Msg&MSID="+id+"&VID=in");
     }
 }

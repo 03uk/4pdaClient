@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.widget.Toast;
+import org.softeg.slartus.forpda.MyApp;
 
 import java.io.IOException;
 
@@ -18,15 +19,15 @@ public class HelpTask extends AsyncTask<HelpTask.OnMethodListener, String, Boole
         Object onMethod(Object param) throws IOException;
     }
 
-    Context mContext;
+   
     private final ProgressDialog dialog;
     private String m_ProcessMessage = "Загрузка...";
-
+    private Context mContext;
     public HelpTask(Context context,  String processMessage) {
-        mContext = context;
+        mContext=context;
 
         m_ProcessMessage=processMessage;
-        dialog = new ProgressDialog(mContext);
+        dialog = new ProgressDialog(context);
         dialog.setCancelable(false);
     }
 
@@ -54,7 +55,7 @@ public class HelpTask extends AsyncTask<HelpTask.OnMethodListener, String, Boole
             Result = params[0].onMethod(null);
             return true;
         } catch (Exception e) {
-            Log.e(mContext, e);
+            Log.e(MyApp.INSTANCE, e);
             ex = e;
             return false;
         }
@@ -70,6 +71,7 @@ public class HelpTask extends AsyncTask<HelpTask.OnMethodListener, String, Boole
     protected void onCancelled() {
         Toast.makeText(mContext, "Отменено",
                 Toast.LENGTH_SHORT).show();
+        mContext=null;
     }
 
     public Exception ex;
@@ -85,6 +87,7 @@ public class HelpTask extends AsyncTask<HelpTask.OnMethodListener, String, Boole
         } catch (Exception ex) {
             Log.e(mContext, ex);
         }
+        mContext=null;
     }
 
 }

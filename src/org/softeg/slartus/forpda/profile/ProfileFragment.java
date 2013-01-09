@@ -10,11 +10,13 @@ import org.softeg.slartus.forpdaapi.UserProfile;
  * Time: 10:51
  */
 public class ProfileFragment extends SherlockFragment {
-    public Boolean Active;
+    public Boolean Active=false;
     private Handler mHandler = new Handler();
     public void startLoad() {
 
     }
+    
+
 
     public interface OnProfileChanged {
         void onProfileChanged(UserProfile userProfile);
@@ -26,7 +28,7 @@ public class ProfileFragment extends SherlockFragment {
 
     }
     private OnProfileChanged m_OnProfileChangedLisener;
-    
+
     public void setOnProfileChangedListener(OnProfileChanged listener){
         m_OnProfileChangedLisener=listener;
     }
@@ -35,9 +37,9 @@ public class ProfileFragment extends SherlockFragment {
     public void setUserProfile(UserProfile userProfile){
         m_UserProfile=userProfile;
     }
-    
+
     public UserProfile getUserProfile(){
         return m_UserProfile;
     }
-    
+
 }

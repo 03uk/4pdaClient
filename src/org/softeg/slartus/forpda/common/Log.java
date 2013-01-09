@@ -20,6 +20,9 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.softeg.slartus.forpda.MyApp;
 import org.softeg.slartus.forpda.classes.Exceptions.AdditionalInfoException;
+import org.softeg.slartus.forpda.classes.Exceptions.MessageInfoException;
+import org.softeg.slartus.forpda.classes.ShowInBrowserDialog;
+import org.softeg.slartus.forpda.classes.ShowInBrowserException;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.*;
@@ -30,17 +33,33 @@ public final class Log {
     public static final String EMAIL_SUBJECT="4pdaClient: Отчёт об ошибке";
     public static String TAG = "org.softeg.slartus.forpda.LOG";
 
-    public static void i(Context context, Exception ex) {
+    public static Boolean isHostUnavailableException(Throwable ex){
+        return isHostUnavailableException(ex,false);
+    }
+    public static Boolean isHostUnavailableException(Throwable ex,Boolean isCause){
+
+        if(ex==null)return false;
+       return ex.getClass() == java.net.UnknownHostException.class ||
+               ex.getClass() == HttpHostConnectException.class ||
+               ex.getClass() == ClientProtocolException.class||(!isCause&&isHostUnavailableException(ex.getCause(),true));
+    }
+    public static Boolean isTimeOutException(Throwable ex){
+        return isTimeOutException(ex,false);
+    }
+    public static Boolean isTimeOutException(Throwable ex,Boolean isCause){
+        if(ex==null)return false;
+        return ex.getClass() == ConnectTimeoutException.class||(!isCause&&isTimeOutException(ex.getCause(),true));
+    }
+    
+    public static void i(Context context, Throwable ex) {
         android.util.Log.i(TAG, getLocation() + ex);
-        if (ex.getClass() == java.net.UnknownHostException.class ||
-                ex.getClass() == HttpHostConnectException.class ||
-                ex.getClass() == ClientProtocolException.class) {
+        if (isHostUnavailableException(ex)) {
             new AlertDialog.Builder(context)
                     .setTitle("Проверьте подключение")
                     .setMessage("Сервер недоступен")
                     .setPositiveButton("ОК", null)
                     .create().show();
-        } else if (ex.getClass() == ConnectTimeoutException.class) {
+        } else if (isTimeOutException(ex)) {
             new AlertDialog.Builder(context)
                     .setTitle("Проверьте подключение")
                     .setMessage("Превышен таймаут ожидания")
@@ -63,7 +82,7 @@ public final class Log {
         android.util.Log.w(TAG, getLocation() + msg);
     }
 
-    public static void e(Context context, Exception ex) {
+    public static void e(Context context, Throwable ex) {
         e(context, ex, true);
     }
 
@@ -71,23 +90,22 @@ public final class Log {
         e(context, message, ex, true);
     }
 
-    public static void e(Context context, Exception ex, Boolean sendReport) {
+    public static void e(Context context, Throwable ex, Boolean sendReport) {
         e(context, ex.getMessage(), ex, sendReport);
     }
 
     public static void e(Context context, String message, Throwable ex, Boolean sendReport) {
-        android.util.Log.e(TAG, getLocation() + ex);
+        String exLocation = getLocation();
+        android.util.Log.e(TAG, exLocation + ex);
 
-        if (ex.getClass() == java.net.UnknownHostException.class ||
-                ex.getClass() == HttpHostConnectException.class ||
-                ex.getClass() == ClientProtocolException.class) {
+        if (isHostUnavailableException(ex)) {
             new AlertDialog.Builder(context)
                     .setTitle("Проверьте подключение")
                     .setMessage("Сервер недоступен")
                     .setPositiveButton("ОК", null)
                     .create().show();
             return;
-        } else if (ex.getClass() == ConnectTimeoutException.class) {
+        } else if (isTimeOutException(ex)) {
             new AlertDialog.Builder(context)
                     .setTitle("Проверьте подключение")
                     .setMessage("Превышен таймаут ожидания")
@@ -109,14 +127,23 @@ public final class Log {
             return;
         }
         try {
-            if (ex.getClass() == NotReportException.class) {
+            if (ex.getClass() == ShowInBrowserException.class) {
+                ShowInBrowserDialog.showDialog(context,(ShowInBrowserException)ex);
+            }else if (ex.getClass() == NotReportException.class) {
                 new AlertDialog.Builder(context)
                         .setTitle("Ошибка")
                         .setMessage(message)
                         .setPositiveButton("ОК", null)
                         .create().show();
+            }else if (ex.getClass() == MessageInfoException.class) {
+                MessageInfoException messageInfoException=(MessageInfoException)ex;
+                new AlertDialog.Builder(context)
+                        .setTitle(messageInfoException.Title)
+                        .setMessage(messageInfoException.Text)
+                        .setPositiveButton("ОК", null)
+                        .create().show();
             } else if (sendReport) {
-                sendReportDialog(context, message, message + "\n " + getLocation() + ex, ex);
+                sendReportDialog(context, message, message + "\n " + exLocation + ex, ex);
             }
         } catch (Exception e) {
             e(null, e, false);
@@ -376,6 +403,9 @@ public final class Log {
 
     private static String getClassName(Class<?> clazz) {
         if (clazz != null) {
+            if (!TextUtils.isEmpty(clazz.getName())) {
+                return clazz.getName();
+            }
             if (!TextUtils.isEmpty(clazz.getSimpleName())) {
                 return clazz.getSimpleName();
             }

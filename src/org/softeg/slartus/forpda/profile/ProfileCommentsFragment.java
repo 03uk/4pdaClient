@@ -275,7 +275,7 @@ public class ProfileCommentsFragment extends ProfileViewsFragment
         }
 
         @Override
-        protected UserProfile loadData(UserProfile userProfile, String userId) throws IOException {
+        protected UserProfile loadData(UserProfile userProfile, String userId) throws Throwable {
 
             return Client.INSTANCE.loadUserProfileComments(userProfile, userId);
         }

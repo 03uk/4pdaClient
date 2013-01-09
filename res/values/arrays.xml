@@ -64,15 +64,12 @@
         <item>PlasticBlack от Remie-l</item>
         <item>WhiteR от Remie-l</item>
         <item>Gray от Remie-l</item>
-        <item>Green от Remie-l</item>
 
-        <item>White от bezIPHONa</item>
-        <item>Gray от bezIPHONa</item>
+
+        <item>White от trablone</item>
+        <item>Gray от trablone</item>
 
         <item>White от vetalorlov</item>
-
-
-        <item>Свой стиль</item>
     </string-array>
 
     <string-array name="appthemesValues">
@@ -84,15 +81,12 @@
         <item>11</item>
         <item>5</item>
         <item>6</item>
-        <item>10</item>
+
 
         <item>4</item>
         <item>9</item>
 
         <item>7</item>
-
-
-        <item>99</item>
     </string-array>
 
     <string-array name="themesTemplatesArray">
@@ -104,6 +98,8 @@
         <item>Дайджест</item>
         <item>Каталог</item>
         <item>Приложения</item>
+        <item>Посещенные темы</item>
+        <item>Загрузки</item>
         <item>Android - Первая помощь</item>
         <item>DevDB.ru</item>
     </string-array>
@@ -117,6 +113,8 @@
         <item>DigestTab</item>
         <item>CatalogTab</item>
         <item>AppsTab</item>
+        <item>TopicsHistoryTab</item>
+        <item>DownloadsTab</item>
         <item>FirstHelpTab</item>
         <item>DevDB</item>
     </string-array>

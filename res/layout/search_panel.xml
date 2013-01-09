@@ -30,6 +30,12 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
+            android:singleLine="true"
+            style="?defaultColors"
+            android:hint="Ключевое слово"
+            android:scrollHorizontally="true"
+            android:capitalize="none"
+            android:autoText="false"
             android:layout_toRightOf="@+id/btnNextSearch"
             android:layout_toLeftOf="@+id/btnCloseSearch"/>
 

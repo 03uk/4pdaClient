@@ -1,20 +1,16 @@
 package org.softeg.slartus.forpda.Tabs;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-import android.text.TextUtils;
+import android.os.Bundle;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.classes.Themes;
 import org.softeg.slartus.forpda.classes.Topic;
 import org.softeg.slartus.forpda.classes.common.Functions;
-import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.search.ISearchResultView;
+import org.softeg.slartus.forpda.search.SearchSettings;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,11 +21,19 @@ import java.util.regex.Pattern;
  * Time: 18:13
  * To change this template use File | Settings | File Templates.
  */
-public class SearchTab extends ThemesTab {
+public class SearchTab extends ThemesTab implements ISearchResultView {
+    SearchSettings m_SearchSettings;
+    private SearchSettings getSearchSettings(){
+        if(m_SearchSettings==null){
+            m_SearchSettings=new SearchSettings(getContext(),m_TabId);
+            m_SearchSettings.loadSettings();
+        }
+        return m_SearchSettings;
+    }
 
     @Override
     public String getTitle() {
-        return m_Name;
+        return getSearchSettings().getName();
     }
 
     public String getTemplate() {
@@ -38,7 +42,6 @@ public class SearchTab extends ThemesTab {
 
     public SearchTab(Context context, String tabTag) {
         super(context, tabTag);
-        loadSettings();
     }
 
 
@@ -47,133 +50,27 @@ public class SearchTab extends ThemesTab {
         return true;
     }
 
+    @Override
+    public void refresh(Bundle savedInstanceState){
 
-
-
-    public void loadSettings() {
-        String tabTag = getTabId();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-        m_Source = preferences.getString(tabTag + ".Template.Source", "all");
-        m_Name = preferences.getString(tabTag + ".Template.Name", "Последние");
-
-        m_Sort = preferences.getString(tabTag + ".Template.Sort", "dd");
-        m_UserName = preferences.getString(tabTag + ".Template.UserName", "");
-        m_Query = preferences.getString(tabTag + ".Template.Query", "");
-
-        loadChecks(preferences.getString(tabTag + ".Template.Forums", "281µAndroid¶"));
-        m_Subforums = preferences.getBoolean(tabTag + ".Template.Subforums", true);
-
-        if (TextUtils.isEmpty(m_Name)) {
-            if (m_Source.equals("all") && m_Sort.equals("dd") && TextUtils.isEmpty(m_UserName)
-                    && (m_CheckedIds.size() == 0) && m_Subforums)
-                m_Name = "Последние";
-            else
-                m_Name = "Поиск";
-        }
+         super.refresh(savedInstanceState);
     }
-
-    public void saveSettings(){
-        String tabTag = getTabId();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-        SharedPreferences.Editor editor=preferences.edit();
-        editor.putString(tabTag + ".Template.Source",m_Source);
-        editor.putString(tabTag + ".Template.Name",m_Name);
-
-        editor.putString(tabTag + ".Template.Sort",m_Sort);
-        editor.putString(tabTag + ".Template.UserName",m_UserName);
-        editor.putString(tabTag + ".Template.Query",m_Query);
-        editor.putString(tabTag + ".Template.Forums", TabDataSettingsActivity. getCheckedIdsString(m_CheckedIds));
-//        editor.putString(tabTag + ".Template.Forums",m_Source);
-        editor.putBoolean(tabTag + ".Template.Subforums",m_Subforums);
-//
-
-        editor.commit();
-    }
-
 
     @Override
     public void getThemes(OnProgressChangedListener progressChangedListener) throws IOException {
-        String params = "&source=" + m_Source;
-        params += "&sort=" + m_Sort;
-        Enumeration<String> keys = m_CheckedIds.keys();
-        for (int i = 0; i < m_CheckedIds.size(); i++) {
-            String key = keys.nextElement();
-
-            params += "&forums%5B%5D=" + key;
-        }
-        if (m_CheckedIds.size() == 0) {
-            params += "&forums%5B%5D=all";
-        }
-        params += "&subforums=" + (m_Subforums ? "1" : "0");
-
-        getSearchThemes(super.m_Themes, m_Query, m_UserName, params, progressChangedListener);
+        getSearchThemes(super.m_Themes, getSearchSettings().getSearchQuery("topics"), progressChangedListener);
     }
 
-    private String m_Query;
-    public String getQuery(){
-        return m_Query;
-    }
-    private String m_UserName;
-    public String getUserName(){
-        return m_UserName;
-    }
-    private String m_Source;
-    public String getSource(){
-        return m_Source;
-    }
-    private String m_Name = "Поиск";
-    private String m_Sort="dd";
-    public String getSort(){
-        return m_Sort;
-    }
-    private Boolean m_Subforums;
-    public Boolean Subforums(){
-        return m_Subforums;
-    }
+    public void search(SearchSettings searchSettings) {
+        m_SearchSettings=searchSettings;
 
-
-    private Hashtable<String, CharSequence> m_CheckedIds = new Hashtable<String, CharSequence>();
-
-    public Hashtable<String, CharSequence> getCheckedIds(){
-        return m_CheckedIds;
-
-    }
-    public void search(String query, String userName, String source, String sort, Boolean subforums,
-                       Hashtable<String, CharSequence> checkedIds) {
-        m_Query = query;
-        m_UserName = userName;
-        m_Source = source;
-        m_Sort = sort;
-        m_Subforums = subforums;
-        m_CheckedIds = checkedIds;
-        saveSettings();
         refresh();
     }
 
+    private void getSearchThemes(Themes themes, String query, OnProgressChangedListener progressChangedListener) throws IOException {
 
 
-    private void loadChecks(String checksString) {
-        m_CheckedIds = new Hashtable<String, CharSequence>();
-        if (TextUtils.isEmpty(checksString)) return;
-        try {
-            String[] pairs = checksString.split(TabDataSettingsActivity.pairsDelimiter);
-            for (int i = 0; i < pairs.length; i++) {
-                String pair = pairs[i];
-                if (TextUtils.isEmpty(pair)) continue;
-                String[] vals = pair.split(TabDataSettingsActivity.pairValuesDelimiter);
-                m_CheckedIds.put(vals[0], vals[1]);
-            }
-        } catch (Exception ex) {
-            Log.e(getContext(), ex);
-        }
-
-    }
-
-
-    private void getSearchThemes(Themes themes, String query, String userName, String params, OnProgressChangedListener progressChangedListener) throws IOException {
-
-
-        String pageBody = Client.INSTANCE.loadPageAndCheckLogin("http://4pda.ru/forum/index.php?act=search&query=" + URLEncoder.encode(query, "windows-1251") + "&username=" + URLEncoder.encode(userName, "windows-1251") + "&subforums=1&result=topics" + params + "&st=" + themes.size()
+        String pageBody = Client.INSTANCE.loadPageAndCheckLogin(query + "&st=" + themes.size()
                 , progressChangedListener);
 
         Pattern pattern = Pattern.compile("<tr>(.*?)<a href=\"/forum/index.php\\?showtopic=(\\d+)\">(.*?)</a><br /><span class=\"desc\">(.*?)</span></td>" +

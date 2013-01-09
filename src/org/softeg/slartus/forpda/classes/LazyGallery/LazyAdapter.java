@@ -15,6 +15,8 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import org.softeg.slartus.forpda.R;
 
+import java.io.IOException;
+
 public class LazyAdapter extends BaseAdapter {
 
     private Activity activity;
@@ -22,7 +24,7 @@ public class LazyAdapter extends BaseAdapter {
     private static LayoutInflater inflater=null;
     public ImageLoader imageLoader;
 
-    public LazyAdapter(Activity a, String[] d) {
+    public LazyAdapter(Activity a, String[] d) throws IOException {
         activity = a;
         data=d;
         inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);

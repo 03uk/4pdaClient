@@ -3,7 +3,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                style="?themeBackground"
+
                 android:orientation="vertical">
     <org.softeg.slartus.forpda.classes.AdvWebView
             android:id="@+id/wvBody"
@@ -15,14 +15,26 @@
             style="?themeBackground"
             android:textSize="12dip"
             />
-
+    <ImageButton
+            android:id="@+id/btnFullScreen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:src="@drawable/ic_media_fullscreen"
+            android:background="@null"
+            android:padding="10dip"
+            android:visibility="gone"
+            />
     <RelativeLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
             android:id="@+id/pnlSearch"
-            android:visibility="gone">
+            android:gravity="center_vertical"
+            android:visibility="gone"
+           >
 
         <ImageButton
                 android:id="@+id/btnPrevSearch"
@@ -45,7 +57,8 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentTop="true"
                 android:layout_toRightOf="@+id/btnNextSearch"
-                android:layout_toLeftOf="@+id/btnCloseSearch"/>
+                android:layout_toLeftOf="@+id/btnCloseSearch"
+                style="?defaultColors"/>
 
         <ImageButton
                 android:id="@+id/btnCloseSearch"
@@ -56,4 +69,6 @@
                 android:layout_alignParentRight="true"/>
 
     </RelativeLayout>
+
+
 </RelativeLayout>

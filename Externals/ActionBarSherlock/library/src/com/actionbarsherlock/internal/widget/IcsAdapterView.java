@@ -576,7 +576,7 @@ public abstract class IcsAdapterView<T extends Adapter> extends ViewGroup {
             return INVALID_POSITION;
         }
 
-        // Search the children for the list item
+        // search the children for the list item
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             if (getChildAt(i).equals(listItem)) {

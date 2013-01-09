@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
+import org.softeg.slartus.forpda.EditPostPlusActivity;
 import org.softeg.slartus.forpda.R;
 import org.softeg.slartus.forpda.classes.ForumItem;
 import org.softeg.slartus.forpda.classes.ThemeOpenParams;
@@ -32,7 +33,7 @@ import java.util.Comparator;
  * Time: 20:58
  * To change this template use File | Settings | File Templates.
  */
-public class ThemesTab extends LinearLayout implements ITab {
+public class ThemesTab extends BaseTab {
 
 
     private View m_Header;
@@ -44,31 +45,22 @@ public class ThemesTab extends LinearLayout implements ITab {
     private TextView txtPullToLoadMore;
     private ImageView imgPullToLoadMore;
     protected Boolean m_UseVolumesScroll = false;
-    private OnTabTitleChangedListener m_OnTabTitleChangedListener;
 
-    public interface OnTabTitleChangedListener {
-        void onTabTitleChanged(String title);
-    }
-
-    public void doOnTabTitleChangedListener(String title) {
-        if (m_OnTabTitleChangedListener != null) {
-            m_OnTabTitleChangedListener.onTabTitleChanged(title);
-        }
-    }
-
-    public void setOnTabTitleChangedListener(OnTabTitleChangedListener p) {
-        m_OnTabTitleChangedListener = p;
-    }
 
 
 
 
     public ThemesTab(Context context, String tabTag) {
         super(context);
+
+
+
+        // new Topic("271502","xx").showActivity(getContext(),"");
+        //topic.showActivity(getContext(), getOpenThemeParams());
         m_TabId = tabTag;
 
         addView(inflate(context, R.layout.forum_tree, null),
-                new LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
+                new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         loadPreferences();
 
@@ -274,7 +266,7 @@ public class ThemesTab extends LinearLayout implements ITab {
     }
 
 
-    protected void getThemes(OnProgressChangedListener progressChangedListener) throws Exception {
+    protected void getThemes(OnProgressChangedListener progressChangedListener) throws Exception, Throwable {
 
     }
 
@@ -285,12 +277,12 @@ public class ThemesTab extends LinearLayout implements ITab {
 
     private class ShowLatestTask extends AsyncTask<ForumItem, String, Boolean> {
 
-        Context mContext;
+       
         private final ProgressDialog dialog;
 
         public ShowLatestTask(Context context) {
-            mContext = context;
-            dialog = new ProgressDialog(mContext);
+            
+            dialog = new ProgressDialog(context);
             dialog.setCancelable(false);
         }
 
@@ -310,7 +302,7 @@ public class ThemesTab extends LinearLayout implements ITab {
                     }
                 });
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 //Log.e(getContext(), e);
                 ex = e;
                 return false;
@@ -334,7 +326,7 @@ public class ThemesTab extends LinearLayout implements ITab {
             }
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         protected void onCancelled() {
             super.onCancelled();
@@ -382,7 +374,7 @@ public class ThemesTab extends LinearLayout implements ITab {
 
             } else {
                 if (ex != null)
-                    Log.e(mContext, ex);
+                    Log.e(ThemesTab.this.getContext(), ex);
             }
 
             lstTree.onRefreshComplete();

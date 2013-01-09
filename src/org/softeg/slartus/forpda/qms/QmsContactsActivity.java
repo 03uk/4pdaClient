@@ -133,7 +133,7 @@ public class QmsContactsActivity extends BaseFragmentActivity implements Adapter
 
         QmsUsers mApps;
 
-        Exception ex;
+        Throwable ex;
 
         public QmsUsersLoader(Context context) {
             super(context);
@@ -147,7 +147,7 @@ public class QmsContactsActivity extends BaseFragmentActivity implements Adapter
                 Client.INSTANCE.setQms(mails.unreadMessageUsers());
                 Client.INSTANCE.doOnMailListener(0);
                 return mails;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 ex = e;
 
             }

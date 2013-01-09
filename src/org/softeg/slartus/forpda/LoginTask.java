@@ -18,12 +18,12 @@ import org.softeg.slartus.forpda.common.Log;
 
 public class LoginTask extends AsyncTask<String, Void, Boolean> {
 
-    Context mContext;
+    private Context mContext;
     private final ProgressDialog dialog;
 
     public LoginTask(Context context) {
         mContext = context;
-        dialog = new ProgressDialog(mContext);
+        dialog = new ProgressDialog(context);
         dialog.setCancelable(false);
     }
 
@@ -61,6 +61,7 @@ public class LoginTask extends AsyncTask<String, Void, Boolean> {
     protected void onCancelled() {
         Toast.makeText(mContext, "Отменено",
                 Toast.LENGTH_SHORT).show();
+        mContext=null;
     }
 
     private Exception ex;
@@ -111,6 +112,7 @@ public class LoginTask extends AsyncTask<String, Void, Boolean> {
 //                    Toast.makeText(mContext, Client.INSTANCE.getLoginFailedReason(),
 //                            Toast.LENGTH_SHORT).show();
         }
+        mContext=null;
     }
 
 }

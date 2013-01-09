@@ -10,16 +10,20 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.text.*;
-import android.view.*;
+import android.text.Editable;
+import android.text.Html;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.ContextMenu;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
@@ -27,11 +31,13 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockFragment;
+import org.softeg.slartus.forpda.classes.BrowserViewsFragmentActivity;
 import org.softeg.slartus.forpda.classes.History;
-import org.softeg.slartus.forpda.classes.common.ExtPreferences;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.common.Log;
 
 import java.lang.reflect.Method;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,13 +49,12 @@ import java.util.regex.Pattern;
  * Date: 07.12.11
  * Time: 8:07
  */
-public class NewsActivity extends BaseFragmentActivity {
-    public static final String URL_KEY = "Url";
+public class NewsActivity extends BrowserViewsFragmentActivity {
+    private static final String URL_KEY = "Url";
     private Handler mHandler = new Handler();
     private WebView webView;
     private RelativeLayout pnlSearch;
-    private Boolean m_UseVolumesScroll = false;
-    private Boolean m_UseZoom = true;
+
     private Boolean m_FromHistory = false;
     private int m_ScrollY = 0;
     private int m_ScrollX = 0;
@@ -61,21 +66,31 @@ public class NewsActivity extends BaseFragmentActivity {
     private ArrayList<History> m_History = new ArrayList<History>();
     private MenuFragment mFragment1;
 
+    public static void shownews(Context context, String url){
+        Intent intent = new Intent(context, NewsActivity.class);
+        intent.putExtra(NewsActivity.URL_KEY, url);
+
+        context.startActivity(intent);
+    }
+
+    protected void afterCreate(){
+        getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+
 
         setContentView(R.layout.theme);
 
         createActionMenu();
 
         webView = (WebView) findViewById(R.id.wvBody);
+        registerForContextMenu(webView);
+        setWebViewSettings();
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        loadPreferences(prefs);
 
         pnlSearch = (RelativeLayout) findViewById(R.id.pnlSearch);
         txtSearch = (EditText) findViewById(R.id.txtSearch);
@@ -111,28 +126,7 @@ public class NewsActivity extends BaseFragmentActivity {
             }
         });
 
-
-        registerForContextMenu(webView);
-
-        webView.getSettings().setLoadsImagesAutomatically(prefs.getBoolean("news.LoadsImagesAutomatically", true));
-        webView.setKeepScreenOn(prefs.getBoolean("news.KeepScreenOn", false));
-
-
-        webView.getSettings().setBuiltInZoomControls(m_UseZoom);
-        webView.getSettings().setSupportZoom(m_UseZoom);
-
-        try {
-            int zoom=         ExtPreferences.parseInt(prefs, "news.ZoomLevel", 150);
-            webView.setInitialScale(zoom);
-        } catch (Exception ex) {
-            Log.e(null, ex);
-        }
-
-        int sdk = new Integer(Build.VERSION.SDK).intValue();
-        if (sdk > 7)
-            webView.getSettings().setPluginState(WebSettings.PluginState.ON);
-
-       // webView.setWebChromeClient(new WebChromeClient() );
+        // webView.setWebChromeClient(new WebChromeClient() );
         Intent intent = getIntent();
         if (intent != null && intent.getData() != null) {
             m_Data = intent.getData();
@@ -147,7 +141,12 @@ public class NewsActivity extends BaseFragmentActivity {
 
     }
 
-    private void createActionMenu() {
+
+    public ImageButton getFullScreenButton() {
+        return (ImageButton)findViewById(R.id.btnFullScreen);
+    }
+
+    protected void createActionMenu() {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         mFragment1 = (MenuFragment) fm.findFragmentByTag("f1");
@@ -156,8 +155,8 @@ public class NewsActivity extends BaseFragmentActivity {
             ft.add(mFragment1, "f1");
         }
         ft.commit();
-    }
 
+    }
 
     @Override
     public void onResume() {
@@ -184,8 +183,9 @@ public class NewsActivity extends BaseFragmentActivity {
         return webView;
     }
 
-    public boolean getUseZoom() {
-        return m_UseZoom;
+    @Override
+    public String Prefix() {
+        return "news";
     }
 
     private class MyWebViewClient extends WebViewClient {
@@ -209,6 +209,9 @@ public class NewsActivity extends BaseFragmentActivity {
             m_ScrollY = 0;
             m_ScrollX = 0;
 
+            if(isReplyUrl(url))
+                return true;
+            
             if (isAnchor(url)) {
                 showAnchor(url);
                 return true;
@@ -223,6 +226,15 @@ public class NewsActivity extends BaseFragmentActivity {
 
             return true;
         }
+    }
+    
+    private Boolean isReplyUrl(String url){
+        Matcher m=Pattern.compile("http://4pdaservice.org/(\\d+)/(\\d+)/(.*)").matcher(url);
+        if(m.find()){
+            respond(m.group(1),m.group(2),m.group(3));
+            return true;
+        }
+        return false;
     }
 
     private String getPostId() {
@@ -267,31 +279,7 @@ public class NewsActivity extends BaseFragmentActivity {
             case WebView.HitTestResult.EDIT_TEXT_TYPE:
                 break;
             default:
-                copyLinkToClipboard(hitTestResult.getExtra());
-        }
-    }
-
-
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        if (!m_UseVolumesScroll)
-            return super.dispatchKeyEvent(event);
-        int action = event.getAction();
-        int keyCode = event.getKeyCode();
-        WebView scrollView = webView;
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_VOLUME_UP:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    scrollView.pageUp(false);
-                }
-                return true;
-            case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (action == KeyEvent.ACTION_DOWN) {
-                    scrollView.pageDown(false);
-                }
-                return true;
-            default:
-                return super.dispatchKeyEvent(event);
+                ExtUrl.showSelectActionDialog(NewsActivity.this,hitTestResult.getExtra());
         }
     }
 
@@ -299,6 +287,10 @@ public class NewsActivity extends BaseFragmentActivity {
     public void onBackPressed() {
         if (pnlSearch.getVisibility() == View.VISIBLE) {
             closeSearch();
+            return;
+        }
+        if(getCurrentFullScreen()){
+            updateFullscreenStatus(false);
             return;
         }
         if (!m_History.isEmpty()) {
@@ -320,14 +312,6 @@ public class NewsActivity extends BaseFragmentActivity {
             doSearch(query);
 
         }
-    }
-
-    private void loadPreferences(SharedPreferences prefs) {
-        m_UseZoom = prefs.getBoolean("news.ZoomUsing", true);
-
-        m_UseVolumesScroll = prefs.getBoolean("news.UseVolumesScroll", false);
-
-
     }
 
     private void doSearch(String query) {
@@ -360,9 +344,7 @@ public class NewsActivity extends BaseFragmentActivity {
     }
 
     private void copyLinkToClipboard(String link) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        clipboard.setText(link);
-        Toast.makeText(this, "Ссылка скопирована в буфер обмена", Toast.LENGTH_SHORT).show();
+        ExtUrl.copyLinkToClipboard(this, link);
     }
 
     private void showNews(String url) {
@@ -422,6 +404,14 @@ public class NewsActivity extends BaseFragmentActivity {
             setHasOptionsMenu(true);
         }
 
+        private Boolean m_FirstTime=true;
+        @Override
+        public void onPrepareOptionsMenu(com.actionbarsherlock.view.Menu menu) {
+            if(!m_FirstTime)
+                getInterface().onPrepareOptionsMenu();
+            m_FirstTime=false;
+        }
+
         @Override
         public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
             super.onCreateOptionsMenu(menu, inflater);
@@ -461,7 +451,7 @@ public class NewsActivity extends BaseFragmentActivity {
                             try {
                                 prefs.getBoolean("news.ZoomUsing", true);
                                 menuItem.setChecked(!menuItem.isChecked());
-                                ((NewsActivity)getActivity()).setAndSaveUseZoom(menuItem.isChecked());
+                                ((NewsActivity)getActivity()).setAndSaveUseZoom( menuItem.isChecked());
 
                             } catch (Exception ex) {
                                 Log.e(getActivity(), ex);
@@ -472,7 +462,7 @@ public class NewsActivity extends BaseFragmentActivity {
                         }
                     }).setCheckable(true).setChecked(prefs.getBoolean("news.ZoomUsing", true));
 
-           // if (getInterface() != null && getInterface().getUseZoom())
+            // if (getInterface() != null && getInterface().getUseZoom())
             {
                 optionsMenu.add("Запомнить масштаб").setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                     public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
@@ -519,30 +509,22 @@ public class NewsActivity extends BaseFragmentActivity {
         }
     }
 
-    private void setAndSaveUseZoom(boolean useZoom) {
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        m_UseZoom = useZoom;
-        webView.getSettings().setBuiltInZoomControls(m_UseZoom);
-        webView.getSettings().setSupportZoom(m_UseZoom);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean("news.ZoomUsing", m_UseZoom);
-        editor.commit();
-    }
-
     private String getUrl() {
         return m_NewsUrl;
     }
 
     private class GetNewsTask extends AsyncTask<String, String, Boolean> {
 
-        Context mContext;
+      
         private final ProgressDialog dialog;
         public String Comment = null;
+        public String ReplyId   ;
+        public String Dp    ;
 
         public GetNewsTask(Context context) {
-            mContext = context;
+           
 
-            dialog = new ProgressDialog(mContext);
+            dialog = new ProgressDialog(context);
 
 
         }
@@ -561,14 +543,14 @@ public class NewsActivity extends BaseFragmentActivity {
                     additionalHeaders.put("comment", Comment);
                     additionalHeaders.put("comment_post_ID", getPostId());
                     additionalHeaders.put("submit", "Отправить комментарий");
-                    additionalHeaders.put("comment_reply_ID", "0");
-                    additionalHeaders.put("comment_reply_dp", "0");
+                    additionalHeaders.put("comment_reply_ID", ReplyId);
+                    additionalHeaders.put("comment_reply_dp", Dp);
                     m_ThemeBody = transformBody(client.performPost("http://4pda.ru/wp-comments-post.php", additionalHeaders, "UTF-8"));
 
 
                 }
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // Log.e(ThemeActivity.this, e);
                 ex = e;
                 return false;
@@ -585,7 +567,7 @@ public class NewsActivity extends BaseFragmentActivity {
                     "<head profile=\"http://gmpg.org/xfn/11\">\n" +
                     "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n" +
                     "\n" +
-                    "<title>4PDA&raquo; Архив блога &raquo; В Samsung показали возможности гибкого AMOLED дисплея</title>\n" +
+                    "<title></title>\n" +
                     "\n" +
                     "<link rel=\"stylesheet\" href=\"file://" + cssFile + "\" type=\"text/css\" media=\"screen, handheld\" />\n" +
                     "<link rel=\"alternate\" type=\"application/rss+xml\" title=\"4PDA RSS лента\" href=\"http://4pda.ru/feed/\" />\n" +
@@ -644,7 +626,8 @@ public class NewsActivity extends BaseFragmentActivity {
         private String normalizeCommentUrls(String body) {
             return body.replace("href=\"#comment", "href=\"" + m_NewsUrl + "/#comment")
                     .replace("href=\"/", "href=\"http://4pda.ru/")
-                    .replaceAll("<p class=\".*?\"><a href=\"javascript:void\\(0\\)\" onclick=\"movecfm\\(event,\\d+,\\d+,'.*?'\\);\">ответить</a></p>","");
+                    .replaceAll("<p class=\"(.*?)\"><a href=\"javascript:void\\(0\\)\" onclick=\"movecfm\\(event,(\\d+),(\\d+),'(.*?)'\\);\">ответить</a></p>",
+                            "<p class=\"$1\"><a href=\"http://4pdaservice.org/$2/$3/$4\">ответить</a></p>");
         }
 
         @Override
@@ -667,7 +650,7 @@ public class NewsActivity extends BaseFragmentActivity {
             }
         }
 
-        private Exception ex;
+        private Throwable ex;
 
         protected void onPostExecute(final Boolean success) {
             Comment = null;
@@ -676,7 +659,7 @@ public class NewsActivity extends BaseFragmentActivity {
                     this.dialog.dismiss();
                 }
             } catch (Exception ex) {
-                Log.e(mContext, ex);
+                Log.e(NewsActivity.this, ex);
             }
 
             if (isCancelled()) return;
@@ -686,7 +669,7 @@ public class NewsActivity extends BaseFragmentActivity {
             } else {
                 NewsActivity.this.setTitle(ex.getMessage());
                 webView.loadDataWithBaseURL("\"file:///android_asset/\"", m_ThemeBody, "text/html", "UTF-8", null);
-                Log.e(mContext, ex);
+                Log.e(NewsActivity.this, ex);
             }
         }
 
@@ -694,13 +677,17 @@ public class NewsActivity extends BaseFragmentActivity {
     }
 
     public void respond() {
+        respond("0","0",null);
+    }
+    public void respond(final String replyId, final String dp, String user) {
 
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View layout = inflater.inflate(R.layout.news_comment_edit, null);
 
         final EditText message_edit = (EditText) layout.findViewById(R.id.comment);
-
+        if(user!=null)
+            message_edit.setText("<b>"+ URLDecoder.decode(user) +",</b>");
         new AlertDialog.Builder(this)
                 .setTitle("Оставить комментарий")
                 .setView(layout)
@@ -716,6 +703,8 @@ public class NewsActivity extends BaseFragmentActivity {
 
                         GetNewsTask getThemeTask = new GetNewsTask(NewsActivity.this);
                         getThemeTask.Comment = message;
+                        getThemeTask.ReplyId= replyId;
+                        getThemeTask.Dp= dp;
                         getThemeTask.execute(m_NewsUrl);
 
                     }

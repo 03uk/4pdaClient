@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +16,8 @@ import com.handmark.pulltorefresh.library.PullToRefreshListView;
 import org.softeg.slartus.forpda.Mail.classes.Mail;
 import org.softeg.slartus.forpda.Mail.classes.Mails;
 import org.softeg.slartus.forpda.Mail.classes.MailsAdapter;
-import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.R;
+import org.softeg.slartus.forpda.common.Log;
 
 /**
  * User: slinkin
@@ -56,7 +55,7 @@ public class MailsListFragment extends SherlockListFragment implements LoaderMan
         mAdapter = new MailsAdapter(getActivity());
 
         setListAdapter(mAdapter);
-
+        //getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         if (m_NeedLoad) {
 
             startLoad();
@@ -151,6 +150,8 @@ public class MailsListFragment extends SherlockListFragment implements LoaderMan
         return pframe;
     }
 
+
+
     private void updateDataInfo() {
 
         int loadMoreVisibility = (m_Mails.getFullLength() > m_Mails.size()) ? View.VISIBLE : View.GONE;
@@ -224,7 +225,10 @@ public class MailsListFragment extends SherlockListFragment implements LoaderMan
     public void onListItemClick(ListView listView, View view, int i, long l) {
         if (l < 0) return;
         try {
+//            CheckBox chkTxt = (CheckBox) view.findViewById(R.id.check);
+//            chkTxt.toggle();
             Mail mail = mAdapter.getItem((int) l);
+            mail.IsChecked=!mail.IsChecked;
             Intent intent = new Intent(getActivity(), MailActivity.class);
             intent.putExtra("MailId", mail.getId());
             getActivity().startActivity(intent);
@@ -236,9 +240,14 @@ public class MailsListFragment extends SherlockListFragment implements LoaderMan
     }
 
 
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
+
+
+//    @Override
+//    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+//
+//        mAdapter.setSelectionMode(!mAdapter.getSelectionMode());
+//        mAdapter.notifyDataSetChanged();
+//    }
 
 //        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
 //        if (info.id < 0) return;
@@ -258,7 +267,7 @@ public class MailsListFragment extends SherlockListFragment implements LoaderMan
 //                }
 //            });
 //        }
-    }
+
 
     public void deleteItem(String id) {
         m_Mails.delete(id);

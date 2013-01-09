@@ -128,6 +128,14 @@ public class MailsAdapter extends ArrayAdapter<Mail> {
         return convertView;
     }
 
+    public boolean getSelectionMode() {
+        return m_SelectionMode;
+    }
+
+    public void setSelectionMode(boolean selectionMode) {
+        this.m_SelectionMode = selectionMode;
+    }
+
 
     public class ViewHolder {
         ImageView check;

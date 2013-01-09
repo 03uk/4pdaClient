@@ -40,9 +40,11 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.softeg.slartus.forpda.classes.AppHttpStatus;
 import org.softeg.slartus.forpda.classes.SerializableCookie;
+import org.softeg.slartus.forpda.classes.ShowInBrowserException;
 import org.softeg.slartus.forpda.classes.common.FileUtils;
 import org.softeg.slartus.forpda.classes.common.Translit;
 import org.softeg.slartus.forpda.common.Log;
+import org.softeg.slartus.forpda.prefs.PreferencesActivity;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.*;
@@ -168,13 +170,17 @@ public class HttpHelper {
         responseHandler = new ResponseHandler<String>() {
             public String handleResponse(HttpResponse httpResponse) throws IOException {
                 StatusLine status = httpResponse.getStatusLine();
-                int statusCode = status.getStatusCode();
-                if (statusCode < 200 || statusCode >= 300) {
-                    if (statusCode >= 500 && statusCode < 600)
-                        throw new NotReportException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()));
-                    else
-                        throw new NotReportException(statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()));
-                }
+                checkStatus(status,"");
+//                int statusCode = status.getStatusCode()
+//                        ;
+//                if (statusCode < 200 || statusCode >= 300) {
+//                    if (statusCode >= 500 && statusCode < 600)
+//                        throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//                    else if (statusCode ==404)
+//                        throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//                    else
+//                        throw new ShowInBrowserException(statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//                }
 
                 return EntityUtils.toString(httpResponse.getEntity(), HTTP_CONTENT_CHARSET);
             }
@@ -477,22 +483,9 @@ public class HttpHelper {
     private synchronized String execute(final HttpRequestBase method) throws IOException {
         String response = null;
         // execute method returns?!? (rather than async) - do it here sync, and wrap async elsewhere
-
-        try {
+      
             response = client.execute(method, responseHandler);
-        } catch (ConnectTimeoutException ex) {
-            throw new NotReportException("Превышен таймаут ожидания: " + ex.getMessage());
-        } catch (ClientProtocolException ex) {
-            throw new NotReportException("Ошибка соединения: " + ex.getMessage());
-        } catch (HttpHostConnectException ex) {
-            throw new NotReportException("Ошибка соединения с сервером: " + ex.getMessage());
-        } catch (UnknownHostException ex) {
-            throw new NotReportException("Сервер не найден: " + ex.getMessage());
-        } catch (Exception ex) {
-            throw new NotReportException("Ошибка: " + ex.getMessage());
-        }
-
-
+       
         return response;
     }
 
@@ -546,108 +539,6 @@ public class HttpHelper {
         return res;
     }
 
-//    public void downloadFile(String dirPath, DownloadTask downloadTask) {
-//        try {
-//            String url = downloadTask.getUrl();
-//            url = "http://4pda.ru/forum/dl/post/944795/PolarisOffice_3.0.3047Q_SGS.apk"; //9.5Mb
-//
-//            // process headers using request interceptor
-//            final Map<String, String> sendHeaders = new HashMap<String, String>();
-//            // add encoding cat_name for gzip if not present
-//            if (!sendHeaders.containsKey(HttpHelper.ACCEPT_ENCODING)) {
-//                sendHeaders.put(HttpHelper.ACCEPT_ENCODING, HttpHelper.GZIP);
-//            }
-//
-//            if (sendHeaders.size() > 0) {
-//                client.addRequestInterceptor(new HttpRequestInterceptor() {
-//                    public void process(final HttpRequest request, final HttpContext context) throws HttpException, IOException {
-//                        for (String key : sendHeaders.keySet()) {
-//                            if (!request.containsHeader(key)) {
-//                                request.addHeader(key, sendHeaders.get(key));
-//                            }
-//                        }
-//                    }
-//                });
-//            }
-//
-//            HttpGet request = new HttpGet(url);
-//            HttpResponse response = client.execute(request);
-//            // Check if server response is valid
-//            StatusLine status = response.getStatusLine();
-//            if (status.getStatusCode() != HttpStatus.SC_OK) {
-//                downloadTask.setEx(new Exception(Integer.toString(status.getStatusCode())));
-//                return;
-//            }
-//
-//
-//            String fileName = downloadTask.getFileName();
-//            String saveDir = dirPath;
-//
-//            String filePath = FileUtils.getUniqueFilePath(saveDir, fileName);
-//            String downloadingFilePath = filePath + "_download";
-//
-//            FileUtils.mkDirs(downloadingFilePath);
-//            new File(downloadingFilePath).createNewFile();
-//
-//            downloadTask.setOutputFile(downloadingFilePath);
-//
-//
-//            long contentLength = response.getEntity().getContentLength();
-//            downloadTask.setProgressState(0, contentLength);
-//
-//
-//            long total  = 0;
-//            int count;
-//            int percent = 0;
-//            int prevPercent = 0;
-//
-//            Date lastUpdateTime = new Date();
-//            Boolean first = true;
-//
-//            InputStream in = new BufferedInputStream(response.getEntity().getContent());
-//            OutputStream output = new FileOutputStream(downloadingFilePath, true);
-//
-//            byte data[] = new byte[1024];
-//            try {
-//                while ((count = in.read(data)) != -1) {
-//                    if (downloadTask.getState() == DownloadTask.STATE_CANCELED)
-//                        return;
-//                    output.write(data, 0, count);
-//                    total += count;
-//
-//                    percent = (int) ((float) total / contentLength * 100);
-//
-//                    long diffInMs = new Date().getTime() - lastUpdateTime.getTime();
-//                    long diffInSec = TimeUnit.MILLISECONDS.toSeconds(diffInMs);
-//
-//                    if ((percent != prevPercent && diffInSec > 1) || first) {
-//                        lastUpdateTime = new Date();
-//                        downloadTask.setProgressState(total, contentLength);
-//                        first = false;
-//                    }
-//                    prevPercent = percent;
-//                    if (downloadTask.getState() == DownloadTask.STATE_CANCELED)
-//                        return;
-//                }
-//                downloadTask.setProgressState(contentLength, contentLength);
-//            } finally {
-//                output.flush();
-//                output.close();
-//                in.close();
-//            }
-//            File downloadingFile = new File(downloadingFilePath);
-//            File downloadedFile = new File(filePath);
-//            if (!downloadingFile.renameTo(downloadedFile)) {
-//                throw new NotReportException("Не могу переименовать файл: " + downloadingFilePath + " в " + filePath);
-//            }
-//            downloadTask.setState(downloadTask.STATE_SUCCESSFULL);
-//        } catch (Exception ex) {
-//            downloadTask.setEx(ex);
-//        }
-//
-//
-//    }
-
     public HttpEntity getDownloadResponse(String url, long range) throws Exception {
 
         // String url = downloadTask.getUrl();
@@ -675,15 +566,23 @@ public class HttpHelper {
         HttpResponse response = client.execute(request);
         // Check if server response is valid
         StatusLine status = response.getStatusLine();
-        if (status.getStatusCode() != HttpStatus.SC_OK && status.getStatusCode() != HttpStatus.SC_PARTIAL_CONTENT) {
-            throw new Exception(Integer.toString(status.getStatusCode()));
-        }
+        checkStatus(status,url);
+//        int statusCode= status.getStatusCode();
+//
+//        if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_PARTIAL_CONTENT) {
+//            if (statusCode >= 500 && statusCode < 600)
+//                throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//            else if (statusCode ==404)
+//                throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//            else
+//                throw new ShowInBrowserException(statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+//        }
 
 
         return response.getEntity();
     }
 
-    public InputStream getImageStream(String url) throws IOException {
+    public InputStream getImageStream(String url) throws Exception {
         // process headers using request interceptor
         final Map<String, String> sendHeaders = new HashMap<String, String>();
         // add encoding cat_name for gzip if not present
@@ -707,20 +606,24 @@ public class HttpHelper {
         HttpResponse response = client.execute(request);
         // Check if server response is valid
         StatusLine status = response.getStatusLine();
-        if (status.getStatusCode() != HttpStatus.SC_OK) {
-
-            int statusCode = status.getStatusCode();
-            if (statusCode < 200 || statusCode >= 300) {
-                if (statusCode >= 500 && statusCode < 600)
-                    throw new NotReportException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()));
-                else
-                    throw new NotReportException(statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()));
-            }
-
-        }
+        checkStatus(status,url);
 
         return response.getEntity().getContent();
 
+    }
+    
+    private static void checkStatus(StatusLine status, String url) throws IOException {
+        int statusCode = status.getStatusCode();
+        if (statusCode != HttpStatus.SC_OK&&statusCode!=HttpStatus.SC_PARTIAL_CONTENT) {
+            if (statusCode < 200 || statusCode >= 300) {
+                if (statusCode >= 500 && statusCode < 600)
+                    throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+                else if (statusCode ==404)
+                    throw new ShowInBrowserException("Сайт не отвечает: " + statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+                else
+                    throw new ShowInBrowserException(statusCode + " " + AppHttpStatus.getReasonPhrase(statusCode, status.getReasonPhrase()),url);
+            }
+        }
     }
 
 

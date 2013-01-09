@@ -47,6 +47,7 @@ public class TabDataSettingsActivity extends Activity {
 
     private String m_TabId;
     private String m_Template;
+    private Forum m_MainForum=null;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,7 +82,7 @@ public class TabDataSettingsActivity extends Activity {
         btnAddForum.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
 
-                if (Client.INSTANCE.MainForum == null || Client.INSTANCE.MainForum.getForums().size() == 0) {
+                if (m_MainForum == null || m_MainForum.getForums().size() == 0) {
                     loadForums();
                 } else {
                     showForums();
@@ -243,7 +244,7 @@ public class TabDataSettingsActivity extends Activity {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    Client.INSTANCE.loadForums(new OnProgressChangedListener() {
+                    m_MainForum=Client.INSTANCE.loadForums(new OnProgressChangedListener() {
                         public void onProgressChanged(final String state) {
                             mHandler.post(new Runnable() {
                                 public void run() {
@@ -286,7 +287,7 @@ public class TabDataSettingsActivity extends Activity {
     private void showForums() {
         if (forumCaptions == null || forumCaptions.size() < 2) {
             forumCaptions = new ArrayList<CharSequence>();
-            addForumCaptions(forumCaptions, Client.INSTANCE.MainForum, null, "");
+            addForumCaptions(forumCaptions, m_MainForum, null, "");
         }
         LayoutInflater factory = LayoutInflater.from(getContext());
         final View view = factory.inflate(R.layout.search_froums_list, null);

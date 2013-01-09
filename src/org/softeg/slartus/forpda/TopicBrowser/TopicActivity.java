@@ -15,8 +15,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import com.actionbarsherlock.view.Window;
 import org.softeg.slartus.forpda.BaseFragmentActivity;
-import org.softeg.slartus.forpda.classes.common.StringUtils;
 import org.softeg.slartus.forpda.R;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 
 /**
  * User: slinkin
@@ -81,7 +81,7 @@ public class TopicActivity extends BaseFragmentActivity {
                 .setNegativeButton("Скопировать в буфер", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialogInterface, int i) {
                         dialogInterface.dismiss();
-                        StringUtils.copyLinkToClipboard(TopicActivity.this, link);
+                        ExtUrl.copyLinkToClipboard(TopicActivity.this, link);
 
                     }
                 })

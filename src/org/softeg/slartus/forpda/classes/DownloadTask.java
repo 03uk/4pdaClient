@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.classes.common.FileUtils;
+import org.softeg.slartus.forpda.db.DownloadsTable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,21 +31,33 @@ public class DownloadTask {
     private Exception ex;
     private int m_Percents;
     private long downloadedSize;
-    private long contentLength;
+    private long m_ContentLength;
     private Date m_CreateDate;
-     private Date m_StateChangedDate;
+    private Date m_StateChangedDate;
     private int m_NotificationId;
     private long m_Range;
     private String m_DownloadingFilePath;
 
-    public DownloadTask(String url,int notificationId) {
+    public DownloadTask(String url, int notificationId) {
+
         m_Url = url;
-        m_NotificationId=notificationId;
-        m_CreateDate=new Date();
-        m_StateChangedDate=new Date();
+        m_NotificationId = notificationId;
+        m_CreateDate = new Date();
+        m_StateChangedDate = new Date();
+
+        DownloadsTable.insertRow(m_NotificationId, m_Url, m_CreateDate);
     }
-    
-    public int getId(){
+
+    public DownloadTask(String url, int notificationId, Date createDate,long contentLength) {
+
+        m_Url = url;
+        m_NotificationId = notificationId;
+        m_CreateDate = createDate;
+        m_ContentLength=contentLength;
+
+    }
+
+    public int getId() {
         return m_NotificationId;
     }
 
@@ -60,8 +73,8 @@ public class DownloadTask {
         return m_State;
     }
 
-    public String getStateMessage(){
-        return  getStateMessage(m_State,ex);
+    public String getStateMessage() {
+        return getStateMessage(m_State, ex);
     }
 
     public static String getStateMessage(int state, Exception downloadTaskException) {
@@ -76,14 +89,21 @@ public class DownloadTask {
             case STATE_CANCELED:
                 return "Загрузка отменена";
             case STATE_ERROR:
-                return "Ошибка загрузки: " + (downloadTaskException==null?"Неизвестная ошибка":downloadTaskException.getMessage());
+                return "Ошибка загрузки: " + (downloadTaskException == null ? "Неизвестная ошибка" : downloadTaskException.getMessage());
         }
         return "Неизвестно";
     }
 
+    public void setJustState(int state) {
+        this.m_State = state;
+    }
+
     public void setState(int state) {
         this.m_State = state;
-        m_StateChangedDate=new Date();
+        m_StateChangedDate = new Date();
+
+
+
         doStateChanged();
     }
 
@@ -91,8 +111,8 @@ public class DownloadTask {
         m_State = STATE_ERROR;
         this.ex = ex;
     }
-    
-    public Exception getEx(){
+
+    public Exception getEx() {
         return ex;
     }
 
@@ -120,10 +140,10 @@ public class DownloadTask {
 
     }
 
-    public void setProgressState( long downloadedSize, long contentLength) {
+    public void setProgressState(long downloadedSize, long contentLength) {
         m_Percents = (int) ((float) downloadedSize / contentLength * 100);
         this.downloadedSize = downloadedSize;
-        this.contentLength = contentLength;
+        this.m_ContentLength = contentLength;
         setState(STATE_DOWNLOADING);
     }
 
@@ -132,7 +152,7 @@ public class DownloadTask {
     }
 
     public String getFileName() {
-        if(TextUtils.isEmpty(outputFile) )
+        if (TextUtils.isEmpty(outputFile))
             return FileUtils.getFileNameFromUrl(m_Url);
         return FileUtils.getFileNameFromUrl(outputFile);
     }
@@ -141,12 +161,16 @@ public class DownloadTask {
         return m_Percents;
     }
 
-    public long getContentLength() {
-        return contentLength;
+    public void calcPercents() {
+        m_Percents = (int) ((float) downloadedSize / m_ContentLength * 100);
     }
 
-    public void setContentLength(long value) {
-        contentLength=value;
+    public long getM_ContentLength() {
+        return m_ContentLength;
+    }
+
+    public void setM_ContentLength(long value) {
+        m_ContentLength = value;
     }
 
 
@@ -154,13 +178,21 @@ public class DownloadTask {
         return downloadedSize;
     }
 
+    public void setDownloadedSize(long value) {
+        downloadedSize=value;
+    }
+
     public void cancel() {
-        if (m_State == STATE_CONNECTING || m_State == STATE_DOWNLOADING||m_State==STATE_PENDING) {
+        if (m_State == STATE_CONNECTING || m_State == STATE_DOWNLOADING || m_State == STATE_PENDING) {
             m_State = STATE_CANCELED;
             doStateChanged();
         }
     }
 
+    public void setCreateDate(Date value) {
+        m_CreateDate= value;
+    }
+    
     public Date getCreateDate() {
         return m_CreateDate;
     }
@@ -174,17 +206,21 @@ public class DownloadTask {
     }
 
     public static long getRange(String filePath) {
-        File file=new File(filePath);
-        if(!file.exists())
+        File file = new File(filePath);
+        if (!file.exists())
             return 0;
         return file.length();
     }
 
     public void setDownloadingFilePath(String downloadingFilePath) {
-        m_DownloadingFilePath=downloadingFilePath;
+        m_DownloadingFilePath = downloadingFilePath;
     }
 
     public String getDownloadingFilePath() {
         return m_DownloadingFilePath;
+    }
+
+    public void updateInfo(long fileLength) {
+        DownloadsTable.updateRow(m_NotificationId, m_DownloadingFilePath, outputFile, fileLength);
     }
 }

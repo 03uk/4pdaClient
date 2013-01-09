@@ -13,9 +13,11 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ExpandableListView;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.SimpleExpandableListAdapter;
 import org.softeg.slartus.forpda.*;
-import org.softeg.slartus.forpda.classes.common.StringUtils;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpdaapi.UserProfile;
 
@@ -29,7 +31,7 @@ import java.util.Map;
  * Date: 27.09.12
  * Time: 7:57
  */
-public class ProfileMainView extends ProfileFragment implements LoaderManager.LoaderCallbacks<UserProfile>  {
+public class ProfileMainView extends ProfileFragment implements LoaderManager.LoaderCallbacks<UserProfile> {
 
     private ImageView mImageAvatar;
     private ProgressBar mSpinnerAvatar;
@@ -37,8 +39,8 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
 
     private Drawable mDrawableAvatar;
     private String mUrlAvatar;
-    protected LoadTask mLoader;
-    String[] groups = new String[]{"Основное","О себе", "Личная информация", "Интересы", "Другая информация", "Статистика",
+
+    private static String[] groups = new String[]{"Основное", "О себе", "Личная информация", "Интересы", "Другая информация", "Статистика",
             "Контактная информация"};
     // коллекция для групп
     ArrayList<Map<String, String>> groupData;
@@ -53,19 +55,27 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
     Map<String, String> m;
 
     ExpandableListView elvMain;
+    boolean mDualPane;
+
+    public static String getGroupName(int groupPosition){
+        if(groupPosition==-1)
+            return "Аватар";
+        return groups[groupPosition];
+    }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+//        View detailsFrame = getActivity().findViewById(R.id.details);
+//        mDualPane = detailsFrame != null
+//                && detailsFrame.getVisibility() == View.VISIBLE;
 
         // Prepare the loader.  Either re-connect with an existing one,
         // or start a new one.
-        if(Active)
+        if (Active)
             getLoaderManager().initLoader(0, null, this);
-       
     }
-  
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -81,20 +91,22 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
             return null;
         }
 
-        View v=inflater.inflate(R.layout.profile_main,null);
+        View v = inflater.inflate(R.layout.profile_main, null);
 
-        pgsMain=(ProgressBar)v.findViewById(R.id.pgsMain);
+        pgsMain = (ProgressBar) v.findViewById(R.id.pgsMain);
 
 
-
-        View imageView=inflater.inflate(R.layout.image_view,null);
+        View imageView = inflater.inflate(R.layout.image_view, null);
         mSpinnerAvatar = (ProgressBar) imageView.findViewById(R.id.pgsAvatar);
         mImageAvatar = (ImageView) imageView.findViewById(R.id.imgAvatar);
         mImageAvatar.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                Object url=view.getTag();
-                if(url==null|| TextUtils.isEmpty(url.toString()))return;
-                ImageViewActivity.showImageUrl(getActivity(), url.toString());
+
+                Object url = view.getTag();
+                if (url == null || TextUtils.isEmpty(url.toString())) return;
+//                ImageViewActivity.showImageUrl(getActivity(), url.toString());
+                ProfileMainFullViewFragmentActivity.showActivity(getActivity(), -1, -1, "<img src=\""+url+"\" border=\"0\">");
+
             }
         });
 
@@ -103,31 +115,29 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
 
         elvMain.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             public boolean onChildClick(ExpandableListView parent, View v,
-                                        int groupPosition,   int childPosition, long id) {
+                                        int groupPosition, int childPosition, long id) {
 
-                StringUtils.copyToClipboard(getActivity(), ((TextView) v).getText().toString());
-                Toast.makeText(getActivity(), "Текст скопирован в буфер обмена", Toast.LENGTH_SHORT).show();
-                return false;
+                ProfileMainFullViewFragmentActivity.showActivity(getActivity(), groupPosition, childPosition, getUserProfile().getValue(groupPosition, childPosition));
+
+                return true;
             }
         });
-       
+
         return v;
     }
 
     @Override
     public void startLoad() {
-        if(Active&&getActivity()!=null&&getLoaderManager().getLoader(0)==null)
-            getLoaderManager().initLoader(0, null, this);
+        if (Active && getActivity() != null )
+            if(getLoaderManager().getLoader(0) == null)
+                getLoaderManager().initLoader(0, null, this);
 
+        Active=true;
     }
 
-    public String getUserId(){
+    public String getUserId() {
         return getArguments().getString(ProfileActivity.USER_ID_KEY);
     }
-
-//    public String getUserNick(){
-//        return m_UserProfile.login;
-//    }
 
     protected void fillData(UserProfile userProfile) {
         // setTitle(userProfile.login+": Просмотр профиля");
@@ -143,9 +153,9 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
         }
 
         // список аттрибутов групп для чтения
-        String groupFrom[] = new String[] {"groupName"};
+        String groupFrom[] = new String[]{"groupName"};
         // список ID view-элементов, в которые будет помещены аттрибуты групп
-        int groupTo[] = new int[] {android.R.id.text1};
+        int groupTo[] = new int[]{android.R.id.text1};
 
 
         // создаем коллекцию для коллекций элементов
@@ -154,9 +164,9 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
         fillGroups(userProfile);
 
         // список аттрибутов элементов для чтения
-        String childFrom[] = new String[] {"itemName"};
+        String childFrom[] = new String[]{"itemName"};
         // список ID view-элементов, в которые будет помещены аттрибуты элементов
-        int childTo[] = new int[] {android.R.id.text1};
+        int childTo[] = new int[]{android.R.id.text1};
 
         SimpleExpandableListAdapter adapter = new SimpleExpandableListAdapter(
                 getActivity(),
@@ -173,59 +183,60 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
 
     }
 
-    private void fillGroups(UserProfile userProfile){
+    private void fillGroups(UserProfile userProfile) {
 
+        //0
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getMain())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getMain())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
 
-
+        //1
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getAboutGroup())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getAboutGroup())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
-
+        //2
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getPrivateInfo())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getPrivateInfo())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
-
+        //3
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getInterests())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getInterests())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
-
+        //4
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getOtherInfo())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getOtherInfo())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
-
+        //5
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getStatistic())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getStatistic())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
         }
         childData.add(childDataItem);
-
+        //6
         childDataItem = new ArrayList<Map<String, String>>();
-        for (String item : UserProfile.getGroupData(userProfile.getContactInfo())) {
+        for (String item : UserProfile.getGroupSimpleData(userProfile.getContactInfo())) {
             m = new HashMap<String, String>();
             m.put("itemName", item);
             childDataItem.add(m);
@@ -238,7 +249,7 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
 
     private void setImageDrawableAvatar(final String imageUrl) {
         mImageAvatar.setTag(imageUrl);
-        if(TextUtils.isEmpty(imageUrl)){
+        if (TextUtils.isEmpty(imageUrl)) {
             mImageAvatar.setVisibility(View.VISIBLE);
             mSpinnerAvatar.setVisibility(View.GONE);
             return;
@@ -246,35 +257,34 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
         mDrawableAvatar = null;
         mSpinnerAvatar.setVisibility(View.VISIBLE);
         mImageAvatar.setVisibility(View.GONE);
-        mUrlAvatar=imageUrl;
+        mUrlAvatar = imageUrl;
         new Thread() {
             public void run() {
-                HttpHelper httpHelper=new HttpHelper();
+                HttpHelper httpHelper = new HttpHelper();
                 try {
 
                     mDrawableAvatar = Drawable.createFromStream(httpHelper.getImageStream(imageUrl), "name");
 
                     imageLoadedHandlerAvatar.sendEmptyMessage(COMPLETE);
 
-                }catch (OutOfMemoryError e) {
-                    Bundle data=new Bundle();
-                    data.putSerializable("exception",e);
-                    data.putString("message","Нехватка памяти: "+mUrlAvatar);
-                    Message message=new Message();
-                    message.what=FAILED;
+                } catch (OutOfMemoryError e) {
+                    Bundle data = new Bundle();
+                    data.putSerializable("exception", e);
+                    data.putString("message", "Нехватка памяти: " + mUrlAvatar);
+                    Message message = new Message();
+                    message.what = FAILED;
                     message.setData(data);
                     imageLoadedHandlerAvatar.sendMessage(message);
-                }
-                catch (Exception e) {
-                    Bundle data=new Bundle();
-                    data.putSerializable("exception",e);
-                    data.putString("message","Ошибка загрузки изображения по адресу: "+mUrlAvatar);
-                    Message message=new Message();
-                    message.what=FAILED;
+                } catch (Exception e) {
+                    Bundle data = new Bundle();
+                    data.putSerializable("exception", e);
+                    data.putString("message", "Ошибка загрузки изображения по адресу: " + mUrlAvatar);
+                    Message message = new Message();
+                    message.what = FAILED;
                     message.setData(data);
                     imageLoadedHandlerAvatar.sendMessage(message);
 
-                } finally{
+                } finally {
                     httpHelper.close();
                 }
             }
@@ -298,7 +308,7 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
                         break;
                     case FAILED:
                         mSpinnerAvatar.setVisibility(View.GONE);
-                        Bundle data=msg.getData();
+                        Bundle data = msg.getData();
                         Log.e(getActivity(), data.getString("message"), (Throwable) data.getSerializable("exception"));
                     default:
                         // Could change image here to a 'failed' image
@@ -306,7 +316,7 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
                         break;
                 }
             } catch (Exception ex) {
-                Log.e(getActivity(),"Ошибка загрузки изображения по адресу: "+mUrlAvatar, ex);
+                Log.e(getActivity(), "Ошибка загрузки изображения по адресу: " + mUrlAvatar, ex);
             }
 
             return true;
@@ -314,16 +324,15 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
     });
 
 
-    
     public Loader<UserProfile> onCreateLoader(int i, Bundle bundle) {
-        LoadTask loadTask= new LoadTask(getActivity(),getUserProfile());
+        LoadTask loadTask = new LoadTask(getActivity(), getUserProfile());
 
-        loadTask.UserId=getUserId();
+        loadTask.UserId = getUserId();
         return loadTask;
     }
 
     public void onLoadFinished(Loader<UserProfile> userProfileLoader, UserProfile userProfile) {
-        if(((LoadTask)userProfileLoader).Ex!=null){
+        if (((LoadTask) userProfileLoader).Ex != null) {
             Log.e(getActivity(), ((LoadTask) userProfileLoader).Ex);
             setState(false);
             return;
@@ -338,36 +347,37 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
         setState(false);
     }
 
-    protected void setState(Boolean load){
-        pgsMain.setVisibility(load?View.VISIBLE:View.GONE);
+    protected void setState(Boolean load) {
+        pgsMain.setVisibility(load ? View.VISIBLE : View.GONE);
         elvMain.setVisibility(load ? View.GONE : View.VISIBLE);
     }
+
     public static class LoadTask extends AsyncTaskLoader<UserProfile> {
 
         protected UserProfile m_UserProfile;
 
         public LoadTask(Context context, UserProfile userProfile) {
             super(context);
-            m_UserProfile=userProfile;
+            m_UserProfile = userProfile;
 
         }
 
         public String UserId;
-        public Exception Ex;
+        public Throwable Ex;
 
         @Override
         public UserProfile loadInBackground() {
-            Ex=null;
+            Ex = null;
             try {
-                return loadData(m_UserProfile,UserId);
-            } catch (IOException e) {
-                Ex=e;
+                return loadData(m_UserProfile, UserId);
+            } catch (Throwable e) {
+                Ex = e;
                 return null;
             }
         }
 
-        protected UserProfile loadData(UserProfile userProfile,String userId) throws IOException {
-            return Client.INSTANCE.loadUserProfile(userProfile,userId);
+        protected UserProfile loadData(UserProfile userProfile, String userId) throws Throwable {
+            return Client.INSTANCE.loadUserProfile(userProfile, userId);
         }
 
         /**
@@ -400,9 +410,9 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
                 onReleaseResources(oldApps);
             }
         }
-        
-        protected Boolean needLoad(){
-            return m_UserProfile==null||TextUtils.isEmpty(m_UserProfile.registration);
+
+        protected Boolean needLoad() {
+            return m_UserProfile == null || TextUtils.isEmpty(m_UserProfile.registration);
         }
 
         /**
@@ -410,8 +420,7 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
          */
         @Override
         protected void onStartLoading() {
-            if (needLoad()||takeContentChanged()  )
-            {
+            if (needLoad() || takeContentChanged()) {
                 // If the data has changed since the last time it was loaded
                 // or is not currently available, start a load.
                 forceLoad();
@@ -459,7 +468,7 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
 
             // At this point we can release the resources associated with 'apps'
             // if needed.
-            if (m_UserProfile!= null) {
+            if (m_UserProfile != null) {
                 onReleaseResources(m_UserProfile);
                 m_UserProfile = null;
             }
@@ -476,5 +485,38 @@ public class ProfileMainView extends ProfileFragment implements LoaderManager.Lo
             // like a Cursor, we would close it here.
         }
     }
+
+//    private static class ProfileMainAdapter extends SimpleExpandableListAdapter{
+//        private LayoutInflater m_Inflater;
+//        static class ViewHolder {
+//            AdvWebView webView;
+//
+//        }
+//
+//        public ProfileMainAdapter(Context context, List<? extends Map<String, ?>> groupData, int groupLayout, String[] groupFrom, int[] groupTo, List<? extends List<? extends Map<String, ?>>> childData, int childLayout, String[] childFrom, int[] childTo) {
+//            super(context, groupData, groupLayout, groupFrom, groupTo, childData, childLayout, childFrom, childTo);
+//            m_Inflater = LayoutInflater.from(context);
+//        }
+//
+//        public android.view.View getChildView(int groupPosition, int childPosition, boolean isLastChild, android.view.View convertView, android.view.ViewGroup parent){
+//            final ViewHolder holder;
+//            if (convertView == null) {
+//
+//                convertView = m_Inflater.inflate(R.layout.profile_main_item, parent, false);
+//                holder = new ViewHolder();
+//                holder.webView=(AdvWebView)convertView.findViewById(R.id.wvBody);
+//
+//                convertView.setTag(holder);
+//
+//            } else {
+//                holder = (ViewHolder) convertView.getTag();
+//            }
+//
+//            Object item=getChild(groupPosition,childPosition);
+//            String body=item==null?"":item.toString();
+//            holder.webView.loadDataWithBaseURL("\"file:///android_asset/\"", body, "text/html", "UTF-8", null);
+//            return convertView;
+//        }
+//    }
 
 }

@@ -8,12 +8,12 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.ContextMenu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.NewsActivity;
 import org.softeg.slartus.forpda.classes.Topic;
+import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpdaapi.NotReportException;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
@@ -24,8 +24,13 @@ import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.IOException;
 import java.io.StringReader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by IntelliJ IDEA.
@@ -66,34 +71,31 @@ public class NewsTab extends ThemesTab {
         final Topic topic = m_ThemeAdapter.getItem((int) info.id);
         if (TextUtils.isEmpty(topic.getId())) return;
 
-        menu.add("Открыть в браузере").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(topic.getId()));
-                getContext().startActivity(Intent.createChooser(marketIntent, "Выберите"));
-                return true;
-            }
-        });
-    }
+        ExtUrl.addUrlMenu(getContext(), menu, topic.getId());
 
+    }
 
     @Override
     public void getThemes(OnProgressChangedListener progressChangedListener) throws Exception {
-        getRssItems(progressChangedListener);
+        Client.INSTANCE.doOnOnProgressChanged(progressChangedListener, "Получение данных...");
+        Client.INSTANCE.loadTestPage();
+        if (m_Themes.size() == 0)
+            getRssItems(progressChangedListener);
+        else
+            getHttpItems(progressChangedListener);
     }
-    
-    private String normalizeRss(String body){
-        return body.replaceAll("&(?!amp;)","&amp;");
+
+    private String normalizeRss(String body) {
+        return body.replaceAll("&(?!amp;)", "&amp;");
     }
 
     private void getRssItems(OnProgressChangedListener progressChangedListener) throws Exception {
         try {
-            Client.INSTANCE.doOnOnProgressChanged(progressChangedListener, "Получение данных...");
-            String body=Client.INSTANCE.performGet("http://4pda.ru/forum/");
-            Client.INSTANCE.checkLogin(body);
-            Client.INSTANCE.checkMails(body);
+            m_Themes.setThemesCountInt(200);
 
-            body = Client.INSTANCE.performGet("http://4pda.ru/feed/");
-            if(TextUtils.isEmpty(body))
+
+            String body = Client.INSTANCE.performGet("http://4pda.ru/feed/");
+            if (TextUtils.isEmpty(body))
                 throw new NotReportException("Сервер вернул пустую страницу!");
             Client.INSTANCE.doOnOnProgressChanged(progressChangedListener, "Обработка данных...");
 
@@ -101,7 +103,7 @@ public class NewsTab extends ThemesTab {
 
             DocumentBuilder db = dbf.newDocumentBuilder();
 
-            body=normalizeRss(body);
+            body = normalizeRss(body);
 
             Document document = db.parse(new InputSource(new StringReader(body)));
 
@@ -113,51 +115,103 @@ public class NewsTab extends ThemesTab {
 
                 for (int i = 0; i < nodeList.getLength(); i++) {
 
-                        Element entry = (Element) nodeList.item(i);
+                    Element entry = (Element) nodeList.item(i);
 
-                        Element _titleE = (Element) entry.getElementsByTagName("title").item(0);
+                    Element _titleE = (Element) entry.getElementsByTagName("title").item(0);
 
-                        Element _descriptionE = (Element) entry.getElementsByTagName("description").item(0);
+                    Element _descriptionE = (Element) entry.getElementsByTagName("description").item(0);
 
-                        Element _pubDateE = (Element) entry.getElementsByTagName("pubDate").item(0);
+                    Element _pubDateE = (Element) entry.getElementsByTagName("pubDate").item(0);
 
-                        Element _linkE = (Element) entry.getElementsByTagName("link").item(0);
-
-
-                        StringBuilder _title = new StringBuilder();
-                        for (int c = 0; c < _titleE.getChildNodes().getLength(); c++) {
-                            _title.append(_titleE.getChildNodes().item(c).getNodeValue());
-                        }
+                    Element _linkE = (Element) entry.getElementsByTagName("link").item(0);
 
 
-                        String _description = _descriptionE.getFirstChild().getNodeValue();
+                    StringBuilder _title = new StringBuilder();
+                    for (int c = 0; c < _titleE.getChildNodes().getLength(); c++) {
+                        _title.append(_titleE.getChildNodes().item(c).getNodeValue());
+                    }
 
-                        Date _pubDate = new Date(_pubDateE.getFirstChild().getNodeValue());
 
-                        String _link = _linkE.getFirstChild().getNodeValue();
+                    String _description = _descriptionE.getFirstChild().getNodeValue();
 
-                        String author = entry.getElementsByTagName("dc:creator").item(0).getChildNodes().item(0).getNodeValue();
+                    Date _pubDate = new Date(_pubDateE.getFirstChild().getNodeValue());
 
-                        Topic topic = new Topic(_link, _title.toString());
-                        topic.setLastMessageDate(_pubDate);
-                        topic.setLastMessageAuthor(author);
-                        topic.setDescription(_description);
+                    String _link = _linkE.getFirstChild().getNodeValue();
 
-                        m_Themes.add(topic);
+                    String author = entry.getElementsByTagName("dc:creator").item(0).getChildNodes().item(0).getNodeValue();
+
+                    NewsTheme topic = new NewsTheme(_link, _title.toString());
+                    topic.setLastMessageDate(_pubDate);
+                    topic.setLastMessageAuthor(author);
+                    topic.setDescription(_description);
+                    topic.Page = 1;
+                    m_Themes.add(topic);
 
                 }
 
             }
         } catch (Exception ex) {
-            Log.e(getContext(), "Ошибка разбора rss", ex);
-          //  throw new NotReportException("Ошибка разбора rss");
+            throw new NotReportException("Ошибка разбора rss: " + ex.getMessage(), ex);
         }
 
     }
 
+    private void getHttpItems(OnProgressChangedListener progressChangedListener) throws Exception {
+
+        loadNextNewsPage();
+    }
+
+    private void loadNextNewsPage() throws IOException, ParseException {
+
+        NewsTheme newsTheme = (NewsTheme) m_Themes.get(m_Themes.size() - 1);
+
+        String url = newsTheme.getId();
+        Matcher m = Pattern.compile("4pda.ru/(\\d+)/(\\d+)/(\\d+)/(\\d+)").matcher(url);
+        m.find();
+
+        int year = Integer.parseInt(m.group(1));
+        int nextPage = newsTheme.Page + 1;
+        loadPage(year, nextPage,0);
+    }
+
+    private void loadPage(int year, int nextPage, int iteration) throws IOException, ParseException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy");
+        String dailyNewsUrl = "http://4pda.ru/" + year + "/page/" + nextPage;
+
+        String dailyNewsPage = Client.INSTANCE.performGet(dailyNewsUrl);
+
+
+        Matcher m = Pattern.compile("<a href=\"(/\\d+/\\d+/\\d+/(\\d+))/\" rel=\"bookmark\" title=\"(.*?)\" alt=\"\">.*?</a></h2>.*?<p style=\"text-align: justify;\">(.*?)</p>[\\s\\S]*?<strong>(.*?)</strong>&nbsp;\\|\\s*(\\d+\\.\\d+\\.\\d+)\\s*\\| ")
+                .matcher(dailyNewsPage);
+        Boolean someUnloaded = false;// одна из новостей незагружена - значит и остальные
+        int before = m_Themes.size();
+        while (m.find()) {
+            String id = "http://4pda.ru" + m.group(1);
+
+            if (!someUnloaded && m_Themes.findByTitle(id) != null) continue;
+            someUnloaded = true;
+
+            NewsTheme topic = new NewsTheme(id, m.group(3));
+
+            Date _pubDate = dateFormat.parse(m.group(6));
+            topic.setLastMessageDate(_pubDate);
+            topic.setLastMessageAuthor(m.group(5));
+            topic.setDescription(m.group(4));
+            topic.Page = nextPage;
+            m_Themes.add(topic);
+        }
+        if (before == m_Themes.size()) {
+            if(iteration>0)return ;
+            if(dailyNewsPage.contains("По указанным параметрам не найдено ни одного поста"))
+                loadPage(year-1,1,iteration+1);
+            else
+                loadPage(year,nextPage+1,iteration+1);
+        }
+    }
+
     protected void listItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        l = ListViewMethodsBridge.getItemId(getContext(),i, l);
-        if (l < 0||m_ThemeAdapter.getCount()<=l) return;
+        l = ListViewMethodsBridge.getItemId(getContext(), i, l);
+        if (l < 0 || m_ThemeAdapter.getCount() <= l) return;
         if (m_ThemeAdapter == null) return;
         Topic topic = m_ThemeAdapter.getItem((int) l);
         if (TextUtils.isEmpty(topic.getId())) return;
@@ -172,10 +226,7 @@ public class NewsTab extends ThemesTab {
     }
 
     private void showNewsActivity(String url) {
-        Intent intent = new Intent(getContext(), NewsActivity.class);
-        intent.putExtra(NewsActivity.URL_KEY, url);
-
-        getContext().startActivity(intent);
+        NewsActivity.shownews(getContext(), url);
     }
 
     private void showNewsBrowser(String url) {
@@ -183,6 +234,15 @@ public class NewsTab extends ThemesTab {
                 Intent.ACTION_VIEW,
                 Uri.parse(url));
         getContext().startActivity(Intent.createChooser(marketIntent, "Выберите"));
+    }
+
+    private class NewsTheme extends Topic {
+
+        public NewsTheme(String id, String title) {
+            super(id, title);
+        }
+
+        public int Page;
     }
 }
 

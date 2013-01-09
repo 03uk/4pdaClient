@@ -50,7 +50,8 @@ public class CatalogTab extends TreeTab {
 
     @Override
     protected void getThemes(OnProgressChangedListener progressChangedListener) throws IOException {
-
+        if(m_ForumForLoadThemes.getParent()==null)
+            return ;
         if (m_Themes.size() == 0) {
             if (m_ForumForLoadThemes.getTag() != null && m_ForumForLoadThemes.getTag().equals("games")) {
                 if (m_ForumForLoadThemes.level == 1 && m_ForumForLoadThemes.getForums().size() == 0) {
@@ -64,7 +65,7 @@ public class CatalogTab extends TreeTab {
                 if (m_ForumForLoadThemes.getParent().getId().equals(m_ForumForLoadThemes.getId()))
                     loadCategoryThemes(m_ForumForLoadThemes, m_ForumForLoadThemes.getParent().getTitle(), progressChangedListener);
                 else
-                    loadSubCategoryThemes(m_ForumForLoadThemes, m_ForumForLoadThemes.getParent().getTitle(), progressChangedListener);
+                    loadSubCategoryThemes(m_ForumForLoadThemes.getParent(),m_ForumForLoadThemes, progressChangedListener);
             }
 
             m_Themes = m_ForumForLoadThemes.getThemes();
@@ -115,17 +116,17 @@ public class CatalogTab extends TreeTab {
         String contentPost=contentMatcher.group(1);
         
        
-        Matcher categoryMatcher=Pattern.compile("<li>.*?<b>(.*?)</b>(.*?)(<br /></li>|</ol>)").matcher(contentPost);
+        Matcher categoryMatcher=Pattern.compile("<li>.*?p=(\\d+).*?<b>(.*?)</b>(.*?)(<br /></li>|</ol>)").matcher(contentPost);
         Pattern subCategoryPattern= Pattern.compile("<b>(.*?)</b>");
 
        
         int id = -1;
         while (categoryMatcher.find()) {
-            Forum category = new Forum(Integer.toString(id++), categoryMatcher.group(1));
+            Forum category = new Forum(categoryMatcher.group(1), categoryMatcher.group(2));
             category.addForum(new Forum(category.getId(), category.getTitle() + " @ темы"));
             catalog.addForum(category);
             
-            Matcher m=subCategoryPattern.matcher(categoryMatcher.group(2))  ;
+            Matcher m=subCategoryPattern.matcher(categoryMatcher.group(3))  ;
             while(m.find()){
                 Forum subcategory = new Forum(Integer.toString(id++), m.group(1));
 
@@ -183,7 +184,7 @@ public class CatalogTab extends TreeTab {
 
 
         //Pattern pattern = Pattern.compile("<li><b>(<!--coloro:royalblue--><span style=\"color:royalblue\"><!--/coloro-->(.*?)<!--colorc--></span><!--/colorc-->\\s*)?<a href=\"http://4pda.ru/forum/index.php\\?showtopic=(\\d+)\" target=\"_blank\">(.*?)</a></b> - (.*?)</li>");
-        Pattern pattern = Pattern.compile("<div class=\"post_body\"><div align='center'><!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>\\d+. " + Pattern.quote(title) + "</b>:(.*?)</div><!--Begin Msg Number");
+        Pattern pattern = Pattern.compile("<a name=\"entry"+category.getId()+"\">([\\s\\S]*?)</div><!--Begin Msg Number");
         Matcher m = pattern.matcher(pageBody);
         pageBody = null;
         Pattern themesPattern = Pattern.compile("((?<!<div align='center'>)<!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>(.*?)</b><!--colorc--></span><!--/colorc--></li>)?<li><b>(<!--coloro:royalblue--><span style=\"color:royalblue\"><!--/coloro-->(.*?)<!--colorc--></span><!--/colorc-->\\s*)?<a href=\"http://4pda.ru/forum/index.php\\?showtopic=(\\d+)\" target=\"_blank\">(.*?)</a></b> - (.*?)</li>");
@@ -229,13 +230,13 @@ public class CatalogTab extends TreeTab {
         }
     }
 
-    private void loadSubCategoryThemes(Forum subCategory, String categoryTitle, OnProgressChangedListener progressChangedListener) throws IOException {
+    private void loadSubCategoryThemes(Forum category, Forum subCategory, OnProgressChangedListener progressChangedListener) throws IOException {
         subCategory.getThemes().clear();
 
         String pageBody = loadPageAndCheckLogin(appCatalogUrl, progressChangedListener);
 
         //Pattern pattern = Pattern.compile("<li><b>(<!--coloro:royalblue--><span style=\"color:royalblue\"><!--/coloro-->(.*?)<!--colorc--></span><!--/colorc-->\\s*)?<a href=\"http://4pda.ru/forum/index.php\\?showtopic=(\\d+)\" target=\"_blank\">(.*?)</a></b> - (.*?)</li>");
-        Pattern pattern = Pattern.compile("<div class=\"post_body\"><div align='center'><!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>\\d+. " + Pattern.quote(categoryTitle) + "</b>:(.*?)</div><!--Begin Msg Number");
+        Pattern pattern = Pattern.compile("<a name=\"entry"+category.getId()+"\">([\\s\\S]*?)</div><!--Begin Msg Number");
         Matcher m = pattern.matcher(pageBody);
         Pattern subCategoryPattern = Pattern.compile("(?<!<div align='center'>)<!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>" + Pattern.quote(subCategory.getTitle()) + "</b><!--colorc--></span><!--/colorc--></li>(.*?)((<!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>)|(#end#))");
         Pattern themesPattern = Pattern.compile("(<ol type='1'><!--coloro:coral--><span style=\"color:coral\"><!--/coloro--><b>(.*?)</b><!--colorc--></span><!--/colorc--></li>)?<li>(<b>)?(<!--coloro:royalblue--><span style=\"color:royalblue\"><!--/coloro-->(.*?)<!--colorc--></span><!--/colorc-->\\s*)?<a href=\"http://4pda.ru/forum/index.php\\?showtopic=(\\d+)\" target=\"_blank\">(.*?)</a>.*?(</b>)? - (.*?)<");

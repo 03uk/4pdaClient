@@ -26,10 +26,12 @@ public final class Tabs {
     public static final String TAB_DEVDB = "DevDB";
     public static final String TAB_QUICK_START = "QuickStart";
     public static final String TAB_NEWS = "NewsTab";
+    public static final String TAB_DOWNLOADS = "DownloadsTab";
+    public static final String TAB_TOPICS_HISTORY = "TopicsHistoryTab";
     public static final String[] templates = {TAB_NEWS,TAB_SEARCH, TAB_FORUMS, TAB_FAVORITES,
-            TAB_SUBSCRIBES, TAB_DIGEST, TAB_CATALOG, TAB_APPS,TAB_FIRST_HELP,TAB_DEVDB};
+            TAB_SUBSCRIBES, TAB_DIGEST, TAB_CATALOG, TAB_APPS,TAB_TOPICS_HISTORY,TAB_FIRST_HELP,TAB_DEVDB,TAB_DOWNLOADS};
 
-    public static ThemesTab create(Context context, String template, String tabId) {
+    public static BaseTab create(Context context, String template, String tabId) {
 
         if (template.equals(Tabs.TAB_FORUMS)) {
             return new ForumTreeTab(context, tabId);
@@ -53,6 +55,10 @@ public final class Tabs {
             return new QuickStartTab(context, tabId);
         } else if (template.equals(NewsTab.TEMPLATE)) {
             return new NewsTab(context, tabId);
+        } else if (template.equals(DownloadsTab.TEMPLATE)) {
+            return new DownloadsTab(context, tabId);
+        }else if (template.equals(TopicsHistoryTab.TEMPLATE)) {
+            return new TopicsHistoryTab(context, tabId);
         }
 
 
@@ -132,7 +138,10 @@ public final class Tabs {
             return DevicesTab.TITLE;
         if (template.equals(NewsTab.TEMPLATE))
             return NewsTab.TITLE;
-
+        if (template.equals(DownloadsTab.TEMPLATE))
+            return DownloadsTab.TITLE;
+        if (template.equals(TopicsHistoryTab.TEMPLATE))
+            return TopicsHistoryTab.TITLE;
 
         throw new NotReportException("Неизвестный шаблон");
     }

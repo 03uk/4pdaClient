@@ -3,11 +3,16 @@ package org.softeg.slartus.forpda;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.*;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.view.ContextMenu;
+import android.view.View;
+import android.view.Window;
 import android.widget.ListView;
 import android.widget.Toast;
+import com.actionbarsherlock.app.SherlockFragment;
+import org.softeg.slartus.forpda.Tabs.BaseTab;
 import org.softeg.slartus.forpda.Tabs.Tabs;
-import org.softeg.slartus.forpda.Tabs.ThemesTab;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 /**
@@ -15,15 +20,18 @@ import org.softeg.slartus.forpdaapi.NotReportException;
  * Date: 14.11.11
  * Time: 11:48
  */
-public class QuickStartActivity extends BaseActivity{
-    private ThemesTab themesTab;
+public class QuickStartActivity extends BaseFragmentActivity{
+    private BaseTab themesTab;
     private Handler mHandler = new Handler();
-
+    private  MenuFragment mFragment1;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+
+        createActionMenu();
+
 
         setContentView(R.layout.empty_activity);
         Intent intent = getIntent();
@@ -39,6 +47,19 @@ public class QuickStartActivity extends BaseActivity{
         }
         themesTab.refresh(extras);
     }
+
+    protected void createActionMenu() {
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        mFragment1 = (MenuFragment) fm.findFragmentByTag("f1");
+        if (mFragment1 == null) {
+            mFragment1 = new MenuFragment();
+            ft.add(mFragment1, "f1");
+        }
+        ft.commit();
+
+    }
+
 
     private Boolean m_ExitWarned = false;
 
@@ -73,7 +94,7 @@ public class QuickStartActivity extends BaseActivity{
     }
 
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo, Handler handler) {
-        //To change body of implemented methods use File | Settings | File Templates.
+
     }
 
     @Override
@@ -82,34 +103,43 @@ public class QuickStartActivity extends BaseActivity{
         m_ExitWarned = false;
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add("Обновить")
-                .setIcon(R.drawable.ic_menu_refresh)
-                .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+    public static final class MenuFragment extends SherlockFragment {
+        public MenuFragment() {
 
-                    public boolean onMenuItemClick(MenuItem item) {
+        }
 
-                        themesTab.refresh();
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setHasOptionsMenu(true);
+        }
 
+        private QuickStartActivity getInterface() {
+            return (QuickStartActivity)getActivity();
+        }
 
-                        return true;
-                    }
-                });
-        menu.add("Закрыть")
-                .setIcon(android.R.drawable.ic_menu_close_clear_cancel)
-                .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+        @Override
+        public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, com.actionbarsherlock.view.MenuInflater inflater) {
+            com.actionbarsherlock.view.MenuItem item = menu.add("Обновить").setIcon(R.drawable.ic_menu_refresh);
+            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                    getInterface().themesTab.refresh();
+                    return true;
+                }
+            });
+            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
 
-                    public boolean onMenuItemClick(MenuItem item) {
+            item = menu.add("Закрыть").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                    getActivity().finish();
 
-                        finish();
-
-
-                        return true;
-                    }
-                });
-        return true;
+                    return true;
+                }
+            });
+        }
     }
+
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, android.view.View v, android.view.ContextMenu.ContextMenuInfo menuInfo) {

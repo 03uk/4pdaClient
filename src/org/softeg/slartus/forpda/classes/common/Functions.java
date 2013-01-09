@@ -95,12 +95,14 @@ public class Functions {
     public static int getUniqueDateInt() {
         Calendar calendar = new GregorianCalendar();
         // максимум: 2147483647
-        // 2.14ч.74м.83с.647мс
-
+        // 1д22ч.74м.83с.647мс
+        //ччммссмммм
+//        calendar.getTimeInMillis()
         int res = calendar.get(Calendar.HOUR_OF_DAY) * 10000000 +
                 calendar.get(Calendar.MINUTE) * 100000 +
                 calendar.get(Calendar.SECOND) * 1000 +
                 calendar.get(Calendar.MILLISECOND);
+
         return res;
     }
 

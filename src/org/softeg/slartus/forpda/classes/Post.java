@@ -12,7 +12,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.R;
-import org.softeg.slartus.forpda.ThemeActivity;
+import org.softeg.slartus.forpda.topicview.ThemeActivity;
 import org.softeg.slartus.forpda.common.Log;
 
 import java.io.IOException;
@@ -60,15 +60,20 @@ public class Post {
     public void setAuthor(String author) {
         m_UserNick = author;
     }
-
-    public void setBody(String value) {
-        m_Body = value
+    
+    public static String modifyBody(String value){
+       return  value
                 .replaceAll("('|\")/forum/style_images", "$1file:///android_asset/forum/style_images")
                 .replaceAll("('|\")style_images", "$1file:///android_asset/forum/style_images")
-                .replaceAll("\"http://s.4pda.ru/forum/style_emoticons", "\"file:///android_asset/forum/style_emoticons")
-                .replaceAll("\"http://sc.4pda.ru/forum/style_emoticons", "\"file:///android_asset/forum/style_emoticons")
-                .replaceAll("(src|href)=('|\")index.php", "$1=$2http://" + Client.SITE + "/forum/index.php")
-                .replaceAll("(src|href)=('|\")/forum", "$1=$2http://" + Client.SITE + "/forum");
+                //.replaceAll("\"http://s.4pda.ru/forum/style_emoticons", "\"file:///android_asset/forum/style_emoticons")
+                //.replaceAll("\"http://sc.4pda.ru/forum/style_emoticons", "\"file:///android_asset/forum/style_emoticons")
+                .replaceAll("(src|href)=('|\")index.php", "$1=$2http://4pda.ru/forum/index.php")
+                .replaceAll("(src|href)=('|\")/forum", "$1=$2http://4pda.ru/forum")
+;
+    }
+
+    public void setBody(String value) {
+        m_Body = value;
 
 //        int i = -1;
 //        int startDivCount = 0;
@@ -294,7 +299,7 @@ public class Post {
         // http://s.4pda.ru/forum/jscripts/karma3.js
         new Thread(new Runnable() {
             public void run() {
-                Exception ex = null;
+                Throwable ex = null;
 
                 String message=null;
                 try {
@@ -306,11 +311,11 @@ public class Post {
                         message= "Ошибка изменения репутации: Вы уже голосовали за этот пост";
                     else
                         message= "Ошибка изменения репутации: "+res;
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     ex = e;
                 }
 
-                final Exception finalEx = ex;
+                final Throwable finalEx = ex;
 
                 final String finalMessage = message;
                 handler.post(new Runnable() {

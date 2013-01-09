@@ -9,6 +9,7 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import org.softeg.slartus.forpda.*;
 import org.softeg.slartus.forpda.Mail.MailBoxActivity;
+import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.qms.QmsContactsActivity;
 
 /**
@@ -102,7 +103,9 @@ public class ProfileMenuFragment extends SherlockFragment {
         mUserMenuItem.getItem().setTitle(Client.INSTANCE.getUser());
         mUserMenuItem.clear();
         if (logged) {
-            mUserMenuItem.add("Личный ящик").setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+            String text = Client.INSTANCE.getMailsCount() > 0 ? ("Личный ящик (" + Client.INSTANCE.getMailsCount() + ")") : "Личный ящик";
+
+            mUserMenuItem.add(text).setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
                     Intent intent = new Intent(getActivity(), MailBoxActivity.class);
@@ -114,8 +117,8 @@ public class ProfileMenuFragment extends SherlockFragment {
                     return true;
                 }
             });
-
-            mUserMenuItem.add("QMS").setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+            text = !TextUtils.isEmpty(Client.INSTANCE.getQms()) ? ("QMS (" + Client.INSTANCE.getQms().split(",").length + ")") : "QMS";
+            mUserMenuItem.add(text).setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
                     Intent intent = new Intent(getActivity(), QmsContactsActivity.class);
@@ -131,7 +134,7 @@ public class ProfileMenuFragment extends SherlockFragment {
             mUserMenuItem.add("Профиль").setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
-                    ProfileActivity.startActivity(getActivity(),Client.INSTANCE.UserId,Client.INSTANCE.getUser());
+                    ProfileActivity.startActivity(getActivity(), Client.INSTANCE.UserId, Client.INSTANCE.getUser());
                     return true;
                 }
             });

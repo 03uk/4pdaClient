@@ -134,7 +134,7 @@ public class User {
      * @return
      * @throws IOException
      */
-    public static String logout(IHttpClient httpClient, String k) throws IOException {
+    public static String logout(IHttpClient httpClient, String k) throws Throwable {
 
         return httpClient.performGet("http://4pda.ru/forum/index.php?act=Login&CODE=03&k=" + k);
 
@@ -150,7 +150,8 @@ public class User {
      * @return Текст ошибки или пустая строка в случае успеха
      * @throws IOException
      */
-    public static String changeReputation(IHttpClient httpClient, String postId, String userId, String type, String message) throws IOException {
+    public static Boolean changeReputation(IHttpClient httpClient, String postId, String userId, String type, String message,
+                                           Map<String, String> outParams) throws IOException {
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("act", "rep");
         additionalHeaders.put("p", postId);
@@ -163,17 +164,24 @@ public class User {
         Pattern p = Pattern.compile("<title>(.*?)</title>");
         Matcher m = p.matcher(res);
         if (m.find()) {
-            if (m.group(1) != null && m.group(1).equals("Ошибка")) {
+            if (m.group(1) != null && m.group(1).contains("Ошибка")) {
                 p = Pattern.compile("<div class='maintitle'>(.*?)</div>");
                 m = p.matcher(res);
                 if (m.find()) {
-                    return "Ошибка изменения репутации: " + m.group(1);
+                    outParams.put("Result","Ошибка изменения репутации: " + m.group(1));                    
                 }
-                return "Ошибка изменения репутации";
+                else{
+                    outParams.put("Result","Ошибка изменения репутации: "+Html.fromHtml(res));
+                }
+
+                return false;
             }
-            return "Репутация: " + m.group(1);
+            outParams.put("Result","Репутация: " + m.group(1));
+            return true;
         }
-        return "Репутация изменена";
+        outParams.put("Result","Репутация изменена");
+        return true;
+
     }
 
     /**
