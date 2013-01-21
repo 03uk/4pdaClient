@@ -390,7 +390,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
                                         .create()
                                         .show();
                             } else {
-                                getInterface().clear();
+                                getInterface().clear(true);
                                 getInterface().finish();
                             }
 

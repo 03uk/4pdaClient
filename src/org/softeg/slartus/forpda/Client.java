@@ -997,7 +997,7 @@ public class Client implements IHttpClient {
                     spoil = false;
                 }
                 String postId = matcher.group(1);
-                android.util.Log.d("loadTopic",postId);
+
                 String str = matcher.group(2);
                 Matcher m = postHeaderPattern.matcher(str);
                 if (m.find()) {

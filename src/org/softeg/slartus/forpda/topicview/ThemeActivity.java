@@ -17,10 +17,7 @@ import android.text.TextWatcher;
 import android.view.ContextMenu;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.JsResult;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.webkit.*;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -166,6 +163,16 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         registerForContextMenu(webView);
         setWebViewSettings();
 
+        webView.getSettings().setDomStorageEnabled(true);
+
+
+        webView.getSettings().setAppCacheMaxSize(1024*1024*8);
+        String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
+        webView.getSettings().setAppCachePath(appCachePath);
+        webView.getSettings().setAllowFileAccess(true);
+        webView.getSettings().setAppCacheEnabled(true);
+        webView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+
         webView.addJavascriptInterface(this, "HTMLOUT");
 
 
@@ -261,7 +268,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                 }
             });
             closeSearch();
-            webView.setPictureListener(new MyPictureListener());
+            
             GetThemeTask getThemeTask = new GetThemeTask(this);
             String themeBody = s_ThemeBody;
             s_ThemeBody = null;
@@ -491,7 +498,15 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     }
 
     public void clear() {
-        webView.clearCache(true);
+        clear(false);
+    }
+
+    public void clear(Boolean clearChache) {
+        webView.setPictureListener(null);
+        webView.setWebViewClient(null);
+        webView.loadData("<html><head></head><body bgcolor="+MyApp.INSTANCE.getCurrentThemeName()+"></body></html>","text/html", "UTF-8");
+        if(clearChache)
+            webView.clearCache(true);
         if (m_Topic != null)
             m_Topic.dispose();
         m_Topic = null;
@@ -617,31 +632,21 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     private class MyPictureListener implements WebView.PictureListener {
         Thread m_ScrollThread;
         Boolean m_Wait=true;
-        
+
         public void onNewPicture(WebView view, Picture arg1) {
-            if (TextUtils.isEmpty(m_ScrollElement) && m_ScrollX == 0) {
+            if (TextUtils.isEmpty(m_ScrollElement) ) {
                 //webView.setPictureListener(null);
                 return;
             }
-//            synchronized (m_Wait){
-//                m_Wait=true;
-//            }
+
             if (m_ScrollThread != null) return;
 
             m_ScrollThread = new Thread(new Runnable() {
                 public void run() {
                     try {
-                        
-                       // while (m_Wait)
-                        {
-//                            synchronized (m_Wait){
-//                                m_Wait=false;
-//                            }
-                            Thread.sleep(800);
-                        }
-                        
+                       Thread.sleep(900);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();  
+                        e.printStackTrace();
                     }
                     mHandler.post(new Runnable() {
                         public void run() {
@@ -658,9 +663,9 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         private void tryScrollToElement() {
 //            if (m_ScrollY != 0) {
 //                webView.scrollTo(0, Math.min(m_ScrollY, (int) Math.floor(webView.getContentHeight() * webView.getScale() - webView.getHeight())));
-//            } else 
+//            } else
             if (!TextUtils.isEmpty(m_ScrollElement)) {
-                webView.scrollTo(0, 100);
+                webView.scrollTo(0, 10);
                 webView.scrollTo(0, 0);
                 webView.loadUrl("javascript: scrollToElement('entry" + m_ScrollElement + "');");
                 m_ScrollElement = null;
@@ -835,7 +840,10 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     public void showTheme(String url) {
         closeSearch();
         webView.clearCache(true);
-        webView.setPictureListener(new MyPictureListener());
+        
+        webView.setWebViewClient(new MyWebViewClient());
+        webView.loadData("<html><head></head><body bgcolor="+MyApp.INSTANCE.getCurrentThemeName()+"></body></html>","text/html", "UTF-8");
+
         GetThemeTask getThemeTask = new GetThemeTask(this);
         getThemeTask.execute(url.replace("|", ""));
     }
@@ -1202,6 +1210,8 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                 m_ScrollElement = m.group(1);
             }
         }
+        if(m_ScrollElement!=null)
+            webView.setPictureListener(new MyPictureListener());
     }
 
 
@@ -1375,7 +1385,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                     //return;
                 }
                 //webView.loadUrl("javascript:clearPostBody();");
-                webView.setPictureListener(new MyPictureListener());
+                
                 showThemeBody(m_ThemeBody);
 
 
@@ -1400,11 +1410,11 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
 
     public class QuoteLoader extends AsyncTask<String, String, Boolean> {
-       
+
         private final ProgressDialog dialog;
 
         public QuoteLoader(Context context) {
-           
+
 
             dialog = new ProgressDialog(context);
 
@@ -1480,6 +1490,8 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         super.onRestoreInstanceState(outState);
         m_LastUrl=outState.getString("LastUrl");
         m_ScrollElement=outState.getString("ScrollElement");
+        if(m_ScrollElement!=null&&!TextUtils.isEmpty(m_ScrollElement))
+            webView.setPictureListener(new MyPictureListener());
         m_Enablesig=outState.getBoolean("Enablesig");
         m_EnableEmo=outState.getBoolean("EnableEmo");
         m_FromHistory=outState.getBoolean("FromHistory");
@@ -1491,7 +1503,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     public void onPause() {
         super.onPause();
 
-        webView.clearCache(true);
+
         webView.setWebViewClient(null);
         webView.setPictureListener(null);
     }

@@ -1,6 +1,7 @@
 package org.softeg.slartus.forpda.classes.common;
 
 import android.os.Environment;
+import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.*;
 import java.net.URLDecoder;
@@ -121,11 +122,12 @@ public class FileUtils {
 
     }
 
-    static public boolean hasStorage(String dirPath, boolean requireWriteAccess) {
+    static public boolean hasStorage(String dirPath, boolean requireWriteAccess) throws NotReportException {
         //TODO: After fix the bug,  add "if (VERBOSE)" before logging errors.
         String state = Environment.getExternalStorageState();
        // Log.v(TAG, "storage state is " + state);
-
+        if(Environment.MEDIA_REMOVED.equals(state))
+            throw new NotReportException("Карта памяти не подключена: "+dirPath);
         if (Environment.MEDIA_MOUNTED.equals(state)) {
             if (requireWriteAccess) {
                 boolean writable = checkFsWritable(dirPath);

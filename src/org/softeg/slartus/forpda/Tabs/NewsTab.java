@@ -14,7 +14,6 @@ import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.NewsActivity;
 import org.softeg.slartus.forpda.classes.Topic;
 import org.softeg.slartus.forpda.classes.common.ExtUrl;
-import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpdaapi.NotReportException;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 import org.w3c.dom.Document;
@@ -86,7 +85,7 @@ public class NewsTab extends ThemesTab {
     }
 
     private String normalizeRss(String body) {
-        return body.replaceAll("&(?!amp;)", "&amp;");
+        return body.replaceAll("&(?!.{1,4};)", "&amp;");
     }
 
     private void getRssItems(OnProgressChangedListener progressChangedListener) throws Exception {
@@ -103,7 +102,7 @@ public class NewsTab extends ThemesTab {
 
             DocumentBuilder db = dbf.newDocumentBuilder();
 
-            body = normalizeRss(body);
+           body = normalizeRss(body);
 
             Document document = db.parse(new InputSource(new StringReader(body)));
 
@@ -127,12 +126,20 @@ public class NewsTab extends ThemesTab {
 
 
                     StringBuilder _title = new StringBuilder();
-                    for (int c = 0; c < _titleE.getChildNodes().getLength(); c++) {
-                        _title.append(_titleE.getChildNodes().item(c).getNodeValue());
+                    NodeList nodes=_titleE.getChildNodes();
+                    int nodesLength=nodes.getLength();
+                    for (int c = 0; c < nodesLength; c++) {
+                        _title.append(nodes.item(c).getNodeValue());
                     }
 
 
-                    String _description = _descriptionE.getFirstChild().getNodeValue();
+                    //String _description = _descriptionE.getFirstChild().getNodeValue();
+                    StringBuilder _description = new StringBuilder();
+                     nodes=_descriptionE.getChildNodes();
+                     nodesLength=nodes.getLength();
+                    for (int c = 0; c < nodesLength; c++) {
+                        _description.append(nodes.item(c).getNodeValue().replace("\n"," "));
+                    }
 
                     Date _pubDate = new Date(_pubDateE.getFirstChild().getNodeValue());
 
@@ -143,7 +150,7 @@ public class NewsTab extends ThemesTab {
                     NewsTheme topic = new NewsTheme(_link, _title.toString());
                     topic.setLastMessageDate(_pubDate);
                     topic.setLastMessageAuthor(author);
-                    topic.setDescription(_description);
+                    topic.setDescription(_description.toString().replaceAll("(<img.*?/>)",""));
                     topic.Page = 1;
                     m_Themes.add(topic);
 

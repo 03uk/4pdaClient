@@ -138,16 +138,16 @@ public class WebViewExternals {
     
     private void disableWebViewCache(){
         getWebView().getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-        try
-        {
-            Method m = CacheManager.class.getDeclaredMethod("setCacheDisabled", boolean.class);
-            m.setAccessible(true);
-            m.invoke(null, true);
-        }
-        catch (Throwable e)
-        {
-            Log.e(null, e);
-        }
+//        try
+//        {
+//            Method m = CacheManager.class.getDeclaredMethod("setCacheDisabled", boolean.class);
+//            m.setAccessible(true);
+//            m.invoke(null, true);
+//        }
+//        catch (Throwable e)
+//        {
+//            Log.e(null, e);
+//        }
     }
 
     protected void setAndSaveUseZoom( boolean useZoom) {
