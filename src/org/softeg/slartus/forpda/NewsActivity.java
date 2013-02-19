@@ -31,6 +31,7 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.view.MenuItem;
 import org.softeg.slartus.forpda.classes.BrowserViewsFragmentActivity;
 import org.softeg.slartus.forpda.classes.History;
 import org.softeg.slartus.forpda.classes.common.ExtUrl;
@@ -84,6 +85,9 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
 
 
         setContentView(R.layout.theme);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
 
         createActionMenu();
 
@@ -141,6 +145,16 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
 
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+
+            onBackPressed();
+            return true;
+        }
+
+        return true;
+    }
 
     public ImageButton getFullScreenButton() {
         return (ImageButton)findViewById(R.id.btnFullScreen);
@@ -282,6 +296,8 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
                 ExtUrl.showSelectActionDialog(NewsActivity.this,hitTestResult.getExtra());
         }
     }
+
+
 
     @Override
     public void onBackPressed() {
@@ -722,7 +738,7 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
         super.onPause();
 
         webView.setWebViewClient(null);
-        webView.setPictureListener(null);
+
     }
 
 
@@ -731,7 +747,7 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
         super.onStop();
 
         webView.setWebViewClient(null);
-        webView.setPictureListener(null);
+
     }
 
 
@@ -740,6 +756,6 @@ public class NewsActivity extends BrowserViewsFragmentActivity {
         super.onDestroy();
 
         webView.setWebViewClient(null);
-        webView.setPictureListener(null);
+
     }
 }

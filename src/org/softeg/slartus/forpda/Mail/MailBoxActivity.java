@@ -69,6 +69,7 @@ public class MailBoxActivity extends BaseFragmentActivity {
         }
         LoadFoldersTask loadFoldersTask = new LoadFoldersTask(this);
         loadFoldersTask.execute();
+        EditMailActivity.showWarning(this);
     }
 
     @Override
@@ -232,16 +233,16 @@ public class MailBoxActivity extends BaseFragmentActivity {
         public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
 
-            com.actionbarsherlock.view.MenuItem item = menu.add("Новое сообщение").setIcon(R.drawable.ic_compose);
-            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
-                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                    Intent intent = new Intent(getActivity(), EditMailActivity.class);
-
-                    startActivity(intent);
-                    return true;
-                }
-            });
-            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+//            com.actionbarsherlock.view.MenuItem item = menu.add("Новое сообщение").setIcon(R.drawable.ic_compose);
+//            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+//                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+//                    Intent intent = new Intent(getActivity(), EditMailActivity.class);
+//
+//                    startActivity(intent);
+//                    return true;
+//                }
+//            });
+//            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
 
 //            item = menu.add("Удалить..").setIcon(android.R.drawable.ic_menu_delete);
 //            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {

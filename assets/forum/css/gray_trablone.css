@@ -1,4 +1,59 @@
-
+/*** QMS ***/
+.thread_timeline{
+text-transform:lowercase;
+color: #1860a8;
+text-align: center;
+margin: 5px;
+}
+.thread_message {
+display: table;
+width: 100%;
+padding: 8px 3px;
+margin-bottom:6px;
+color: #707070;
+border-radius:3px;
+}
+.thread_message > * {
+display: table-cell;
+}
+.in_message{
+background: #181818;
+}
+.out_message{
+background: #262626;
+}
+.message_checkbox {
+display: none;
+}
+.checkbox{}
+.thread_message .avatar {
+background-position: 50% 0px;
+}
+.avatar {
+background-position: 50% 0px;
+background-repeat: no-repeat;
+background-size: contain;
+height: 3.2em;
+vertical-align: top;
+width: 3.2em;
+}
+.message_content {
+padding: 0px 0px 0px 7px;
+}
+.thread_message .member {
+color: #4373C3;
+float: left;
+font-weight: 700;
+}
+.thread_message .date {
+color: #3b3b3b;
+float: right;
+}
+.thread_message .msg {
+padding-bottom: 3px;
+color: #efefef;
+}
+/******/
 /*****Форма ответа*****/
 #post{
 font-size: 14px;   /*розмер шрифта*/

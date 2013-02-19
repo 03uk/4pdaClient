@@ -195,10 +195,10 @@
                             android:defaultValue="true"
                             android:title="Подтверждать загрузку файла"
                             android:summary=" Подтверждение загрузки файла при выборе ссылки"/>
-        <CheckBoxPreference android:key="theme.HidePostForm"
-                            android:defaultValue="false"
-                            android:title="Прятать поле ответа"
-                            android:summary="Прятать поле ответа под спойлер"/>
+        <!--<CheckBoxPreference android:key="theme.HidePostForm"-->
+                            <!--android:defaultValue="false"-->
+                            <!--android:title="Прятать поле ответа"-->
+                            <!--android:summary="Прятать поле ответа под спойлер"/>-->
         <CheckBoxPreference android:key="theme.SpoilerByButton"
                             android:defaultValue="false"
                             android:title="Использовать кнопку для спойлеров"
@@ -211,6 +211,18 @@
                             android:defaultValue="false"
                             android:title="Вид как в браузере"
                             android:summary="Вид темы как в браузере в мобильной версии. !Темы загружаются быстрее!"/>
+
+        <ListPreference android:key="file.downloaderManagers"
+                        android:defaultValue="0"
+                        android:title="Скачивать файл при помощи.."
+                        android:summary="Использовать для скачивания файлов выбранный менеджер"
+                        android:entries="@array/downloaderManagersArray"
+                        android:entryValues="@array/downloaderManagersValues"/>
+
+        <!--<CheckBoxPreference android:key="file.downloaderManager"-->
+                            <!--android:defaultValue="false"-->
+                            <!--android:title="Внешний браузер"-->
+                            <!--android:summary="Скачивать файлы через внешний браузер"/>-->
 
         <!--<CheckBoxPreference android:key="EditPostPlus.FullScreen"-->
                             <!--android:defaultValue="false"-->

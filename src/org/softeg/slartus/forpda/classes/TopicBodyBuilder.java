@@ -64,7 +64,7 @@ public class TopicBodyBuilder {
         }
 
         m_Body.append("<br/><br/>");
-        addPostForm(m_Body);
+//        addPostForm(m_Body);
 
         m_Body.append(getTitleBlock());
 
@@ -154,7 +154,8 @@ public class TopicBodyBuilder {
         if (m_HidePostForm)
             sb.append("<div><div class='hidetop' style='cursor:pointer;' id=\"hidetxtinput\"  onclick=\"var _n=this.parentNode.getElementsByTagName('div')[1];if(_n.style.display=='none'){_n.style.display='';}else{_n.style.display='none';}\">Спойлер (+/-) <b>( &gt;&gt;&gt;ФОРМА ОТВЕТА&lt;&lt;&lt;)</b></div><div class='hidemain' style=\"display:none\">");
 
-        sb.append(EditPost.getPostForm(m_Enablesig, m_EnableEmo, m_PostBody, m_Topic.isModerator(),m_LoadsImagesAutomatically));
+        sb.append(EditPost.getPostForm(m_Enablesig, m_EnableEmo, m_PostBody, m_Topic.isModerator(),
+                m_LoadsImagesAutomatically,m_IsWebviewAllowJavascriptInterface));
         if (m_HidePostForm)
             sb.append("</div></div><br/><br/><br/>");
     }
@@ -171,7 +172,7 @@ public class TopicBodyBuilder {
         return getHtmlout(m_IsWebviewAllowJavascriptInterface, methodName, new String[0]);
     }
 
-    private static String getHtmlout(Boolean webViewAllowJs, String methodName) {
+    public static String getHtmlout(Boolean webViewAllowJs, String methodName) {
         return getHtmlout(webViewAllowJs, methodName, new String[0]);
     }
 

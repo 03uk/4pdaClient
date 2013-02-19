@@ -12,10 +12,14 @@
                  android:layout_centerVertical="true"/>
     <EditText
             android:id="@+id/query_edit"
+            android:paddingLeft="2dip"
+            android:textCursorDrawable="@null"
+            style="?defaultColors"
+            android:background="@drawable/textlines"
             android:singleLine="true"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            style="?defaultColors"
+
             android:hint="Ключевые слова"
             android:scrollHorizontally="true"
             android:capitalize="none"

@@ -9,8 +9,6 @@
         <option name="RES_FOLDER_RELATIVE_PATH" value="/res" />
         <option name="ASSETS_FOLDER_RELATIVE_PATH" value="/assets" />
         <option name="LIBS_FOLDER_RELATIVE_PATH" value="/libs" />
-        <option name="REGENERATE_R_JAVA" value="true" />
-        <option name="REGENERATE_JAVA_BY_AIDL" value="true" />
         <option name="USE_CUSTOM_APK_RESOURCE_FOLDER" value="false" />
         <option name="CUSTOM_APK_RESOURCE_FOLDER" value="" />
         <option name="USE_CUSTOM_COMPILER_MANIFEST" value="false" />
@@ -20,6 +18,15 @@
         <option name="RUN_PROCESS_RESOURCES_MAVEN_TASK" value="true" />
         <option name="GENERATE_UNSIGNED_APK" value="false" />
         <option name="CUSTOM_DEBUG_KEYSTORE_PATH" value="" />
+        <option name="PACK_TEST_CODE" value="false" />
+        <option name="RUN_PROGUARD" value="false" />
+        <option name="PROGUARD_CFG_PATH" value="/proguard-project.txt" />
+        <resOverlayFolders>
+          <path>/res-overlay</path>
+        </resOverlayFolders>
+        <includeSystemProguardFile>true</includeSystemProguardFile>
+        <includeAssetsFromLibraries>false</includeAssetsFromLibraries>
+        <additionalNativeLibs />
       </configuration>
     </facet>
   </component>
@@ -32,14 +39,23 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="QuickActions" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/Externals/ActionBarSherlock/library/libs/android-support-v4.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="module" module-name="4pdaApi" />
-    <orderEntry type="module" module-name="ActionBarSherlock" />
-    <orderEntry type="library" name="android-support-v4" level="project" />
-    <orderEntry type="module" module-name="PullToRefresh" />
+    <orderEntry type="module" module-name="SqliteHelper" />
     <orderEntry type="module" module-name="AndroidBillingLibrary" />
+    <orderEntry type="module" module-name="ActionBarSherlock" />
+    <orderEntry type="module" module-name="FileExplorer" />
+    <orderEntry type="module" module-name="PullToRefresh" />
     <orderEntry type="library" name="apache" level="project" />
-    <orderEntry type="module" module-name="Core" />
+    <orderEntry type="module" module-name="QuickActions" />
   </component>
 </module>
 

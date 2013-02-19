@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.widget.Toast;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
@@ -27,46 +28,92 @@ import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.net.SocketException;
 
 public final class Log {
-    public static final String EMAIL="slartus+4pda@gmail.com";
-    public static final String EMAIL_SUBJECT="4pdaClient: Отчёт об ошибке";
+    public static final String EMAIL = "slartus+4pda@gmail.com";
+    public static final String EMAIL_SUBJECT = "4pdaClient: Отчёт об ошибке";
     public static String TAG = "org.softeg.slartus.forpda.LOG";
 
-    public static Boolean isHostUnavailableException(Throwable ex){
-        return isHostUnavailableException(ex,false);
+    public static Boolean isHostUnavailableException(Throwable ex) {
+        return isHostUnavailableException(ex, false);
     }
-    public static Boolean isHostUnavailableException(Throwable ex,Boolean isCause){
 
-        if(ex==null)return false;
-       return ex.getClass() == java.net.UnknownHostException.class ||
-               ex.getClass() == HttpHostConnectException.class ||
-               ex.getClass() == ClientProtocolException.class||(!isCause&&isHostUnavailableException(ex.getCause(),true));
+    public static Boolean isHostUnavailableException(Throwable ex, Boolean isCause) {
+
+        if (ex == null) return false;
+        return ex.getClass() == java.net.UnknownHostException.class ||
+                ex.getClass() == HttpHostConnectException.class ||
+                ex.getClass() == ClientProtocolException.class ||
+                ex.getClass() == NoHttpResponseException.class ||
+                (!isCause && isHostUnavailableException(ex.getCause(), true));
     }
-    public static Boolean isTimeOutException(Throwable ex){
-        return isTimeOutException(ex,false);
+
+    public static Boolean isTimeOutException(Throwable ex) {
+        return isTimeOutException(ex, false);
     }
-    public static Boolean isTimeOutException(Throwable ex,Boolean isCause){
-        if(ex==null)return false;
-        return ex.getClass() == ConnectTimeoutException.class||(!isCause&&isTimeOutException(ex.getCause(),true));
+
+    public static Boolean isTimeOutException(Throwable ex, Boolean isCause) {
+        if (ex == null) return false;
+        return ex.getClass() == ConnectTimeoutException.class ||
+                (ex.getClass() == SocketException.class
+                        && "recvfrom failed: ETIMEDOUT (Connection timed out)".equals(ex.getMessage())) ||
+                (!isCause && isTimeOutException(ex.getCause(), true));
     }
-    
+
+    public static Boolean isException(Throwable ex, Class c) {
+        return isException(ex, false, c);
+    }
+
+    public static Boolean isException(Throwable ex, Boolean isCause, Class c) {
+        if (ex == null) return false;
+        return ex.getClass() == c || (!isCause && isException(ex.getCause(), true, c));
+    }
+
     public static void i(Context context, Throwable ex) {
         android.util.Log.i(TAG, getLocation() + ex);
-        if (isHostUnavailableException(ex)) {
-            new AlertDialog.Builder(context)
-                    .setTitle("Проверьте подключение")
-                    .setMessage("Сервер недоступен")
-                    .setPositiveButton("ОК", null)
-                    .create().show();
-        } else if (isTimeOutException(ex)) {
-            new AlertDialog.Builder(context)
-                    .setTitle("Проверьте подключение")
-                    .setMessage("Превышен таймаут ожидания")
-                    .setPositiveButton("ОК", null)
-                    .create().show();
-        } else
-            Toast.makeText(context, ex.getMessage(), Toast.LENGTH_SHORT).show();
+        if (tryShowNetException(context, ex, null)) return;
+        Toast.makeText(context, ex.getMessage(), Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean tryShowNetException(Context context, Throwable ex, final Runnable netExceptionAction) {
+        try {
+            AlertDialog.Builder builder = null;
+            if (isHostUnavailableException(ex)) {
+                builder = new AlertDialog.Builder(context)
+                        .setTitle("Проверьте подключение")
+                        .setMessage("Сервер недоступен или не отвечает")
+                        .setPositiveButton("ОК", null);
+
+            } else if (isTimeOutException(ex)) {
+                builder = new AlertDialog.Builder(context)
+                        .setTitle("Проверьте подключение")
+                        .setMessage("Превышен таймаут ожидания")
+                        .setPositiveButton("ОК", null);
+            } else if (isException(ex, SocketException.class)) {
+                builder = new AlertDialog.Builder(context)
+                        .setTitle("Проверьте подключение")
+                        .setMessage("Соединение разорвано")
+                        .setPositiveButton("ОК", null);
+            }
+            if (builder != null) {
+                if (netExceptionAction != null) {
+                    builder.setNegativeButton("Повторить", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                            netExceptionAction.run();
+                        }
+                    });
+                }
+                builder.create().show();
+                return true;
+            }
+        } catch (Throwable loggedEx) {
+            android.util.Log.e(TAG, getLocation() + ex);
+        }
+
+        return false;
     }
 
     public static void d(String msg) {
@@ -86,34 +133,36 @@ public final class Log {
         e(context, ex, true);
     }
 
+    public static void e(Context context, Throwable ex, Runnable runnable) {
+        e(context, ex.getMessage(), ex, runnable, true);
+    }
+
+    public static void eToast(Context context, Throwable ex) {
+        e(context, ex.getMessage(), ex);
+    }
+
     public static void e(Context context, String message, Throwable ex) {
-        e(context, message, ex, true);
+        String exLocation = getLocation();
+        android.util.Log.e(TAG, exLocation + ex);
+        try {
+            Toast.makeText(context, ex.toString(), Toast.LENGTH_SHORT).show();
+        } catch (Throwable ignoredEx) {
+
+        }
     }
 
     public static void e(Context context, Throwable ex, Boolean sendReport) {
-        e(context, ex.getMessage(), ex, sendReport);
+        e(context, ex.getMessage(), ex, null, sendReport);
     }
 
-    public static void e(Context context, String message, Throwable ex, Boolean sendReport) {
+    public static void e(Context context, String message, Throwable ex,
+                         Runnable netExceptionAction,
+                         Boolean sendReport) {
         String exLocation = getLocation();
         android.util.Log.e(TAG, exLocation + ex);
 
-        if (isHostUnavailableException(ex)) {
-            new AlertDialog.Builder(context)
-                    .setTitle("Проверьте подключение")
-                    .setMessage("Сервер недоступен")
-                    .setPositiveButton("ОК", null)
-                    .create().show();
-            return;
-        } else if (isTimeOutException(ex)) {
-            new AlertDialog.Builder(context)
-                    .setTitle("Проверьте подключение")
-                    .setMessage("Превышен таймаут ожидания")
-                    .setPositiveButton("ОК", null)
-                    .create().show();
-            return;
-        }
-        
+        if (tryShowNetException(context, ex, netExceptionAction)) return;
+
 
         if (TextUtils.isEmpty(message))
             message = ex.getMessage();
@@ -128,15 +177,15 @@ public final class Log {
         }
         try {
             if (ex.getClass() == ShowInBrowserException.class) {
-                ShowInBrowserDialog.showDialog(context,(ShowInBrowserException)ex);
-            }else if (ex.getClass() == NotReportException.class) {
+                ShowInBrowserDialog.showDialog(context, (ShowInBrowserException) ex);
+            } else if (ex.getClass() == NotReportException.class) {
                 new AlertDialog.Builder(context)
                         .setTitle("Ошибка")
                         .setMessage(message)
                         .setPositiveButton("ОК", null)
                         .create().show();
-            }else if (ex.getClass() == MessageInfoException.class) {
-                MessageInfoException messageInfoException=(MessageInfoException)ex;
+            } else if (ex.getClass() == MessageInfoException.class) {
+                MessageInfoException messageInfoException = (MessageInfoException) ex;
                 new AlertDialog.Builder(context)
                         .setTitle(messageInfoException.Title)
                         .setMessage(messageInfoException.Text)
@@ -172,8 +221,8 @@ public final class Log {
             e(null, e, false);
         }
     }
-    
-    public static void sendMail(final Handler handler,final Context context, final String theme, final String body, final String attachText){
+
+    public static void sendMail(final Handler handler, final Context context, final String theme, final String body, final String attachText) {
 
 
         Thread th = new Thread(new Runnable() {
@@ -183,7 +232,7 @@ public final class Log {
                 intent.putExtra(Intent.EXTRA_EMAIL, new String[]{EMAIL});
                 intent.putExtra(Intent.EXTRA_SUBJECT, theme);
                 intent.putExtra(Intent.EXTRA_TEXT, body.toString());
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + createLogFile(context,attachText)));
+                intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + createLogFile(context, attachText)));
                 handler.post(new Runnable() {
                     public void run() {
                         context.startActivity(Intent.createChooser(intent, "Отправка сообщения"));
@@ -224,7 +273,7 @@ public final class Log {
                     }
                 }
 
-                String logCatPath = createLogFile(context,addFileBody);
+                String logCatPath = createLogFile(context, addFileBody);
 
                 intent.putExtra(Intent.EXTRA_TEXT, body.toString());
                 intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + logCatPath));

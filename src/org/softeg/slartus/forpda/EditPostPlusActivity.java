@@ -4,10 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.*;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -20,6 +17,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
@@ -66,6 +64,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
     private MenuFragment mFragment1;
     private String postText;
     private View m_BottomPanel;
+
     public static void editPost(Context context, String forumId, String topicId, String postId, String authKey) {
         Intent intent = new Intent(context, EditPostPlusActivity.class);
 
@@ -95,7 +94,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
         lastSelectDirPath = prefs.getString("EditPost.AttachDirPath", lastSelectDirPath);
         m_ConfirmSend = prefs.getBoolean("theme.ConfirmSend", true);
-        m_BottomPanel=findViewById(R.id.bottomPanel);
+        m_BottomPanel = findViewById(R.id.bottomPanel);
         glrBbCodes = (Gallery) findViewById(R.id.glrBbCodes);
         glrSmiles = (Gallery) findViewById(R.id.glrSmiles);
         txtPost = (EditText) findViewById(R.id.txtPost);
@@ -234,11 +233,18 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
                         dialogInterface.dismiss();
                         switch (i) {
                             case 0://файл
-                                Intent intent = new Intent();
-                                intent.setAction(Intent.ACTION_GET_CONTENT);
-                                intent.setType("file/*");
-                                intent.setDataAndType(Uri.parse("file:/" + lastSelectDirPath), "file/*");
-                                startActivityForResult(intent, REQUEST_SAVE);
+                                try {
+                                    Intent intent = new Intent();
+                                    intent.setAction(Intent.ACTION_GET_CONTENT);
+                                    intent.setType("file/*");
+                                    intent.setDataAndType(Uri.parse("file:/" + lastSelectDirPath), "file/*");
+                                    startActivityForResult(intent, REQUEST_SAVE);
+
+                                } catch (ActivityNotFoundException ex) {
+                                    Toast.makeText(EditPostPlusActivity.this, "Ни одно приложение не установлено для выбора файла!", Toast.LENGTH_LONG).show();
+                                } catch (Exception ex) {
+                                    Log.e(EditPostPlusActivity.this, ex);
+                                }
 
 //                                Intent intent = new Intent(EditPostPlusActivity.this.getBaseContext(),
 //                                        FileDialog.class);
@@ -246,10 +252,16 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 //                                EditPostPlusActivity.this.startActivityForResult(intent, REQUEST_SAVE);
                                 break;
                             case 1:// Изображение
-                                Intent imageintent = new Intent(
-                                        Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                try {
+                                    Intent imageintent = new Intent(
+                                            Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
-                                startActivityForResult(imageintent, REQUEST_SAVE_IMAGE);
+                                    startActivityForResult(imageintent, REQUEST_SAVE_IMAGE);
+                                } catch (ActivityNotFoundException ex) {
+                                    Toast.makeText(EditPostPlusActivity.this, "Ни одно приложение не установлено для выбора изображения!", Toast.LENGTH_LONG).show();
+                                } catch (Exception ex) {
+                                    Log.e(EditPostPlusActivity.this, ex);
+                                }
                                 break;
                         }
                     }
@@ -264,7 +276,12 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
                 if (requestCode == REQUEST_SAVE) {
 //                    m_AttachFilePath = data.getStringExtra(FileDialog.RESULT_PATH);
-                     m_AttachFilePath = data.getData().getPath();
+                    if(data.getData().getPath().startsWith("content://")) {
+                        m_AttachFilePath = getRealPathFromURI(data.getData());
+                    }else{
+                        m_AttachFilePath = data.getData().getPath();
+                    }
+
 
                     saveAttachDirPath();
 
@@ -274,15 +291,15 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
                 } else if (requestCode == REQUEST_SAVE_IMAGE) {
 
                     Uri selectedImage = data.getData();
-                    String[] filePathColumn = {MediaStore.Images.Media.DATA};
-
-                    Cursor cursor = getContentResolver().query(selectedImage,
-                            filePathColumn, null, null, null);
-                    cursor.moveToFirst();
-
-                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                    m_AttachFilePath = cursor.getString(columnIndex);
-                    cursor.close();
+//                    String[] filePathColumn = {MediaStore.Images.Media.DATA};
+//
+//                    Cursor cursor = getContentResolver().query(selectedImage,
+//                            filePathColumn, null, null, null);
+//                    cursor.moveToFirst();
+//
+//                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                    m_AttachFilePath = getRealPathFromURI(selectedImage);
+                    //cursor.close();
 
                     m_Enablesig = tglEnableSig.isChecked();
                     m_EnableEmo = tglEnableEmo.isChecked();
@@ -293,6 +310,21 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
             Log.e(this, ex);
         }
 
+    }
+
+    public String getRealPathFromURI(Uri contentUri) {
+
+        // can post image
+        String [] filePathColumn={MediaStore.Images.Media.DATA};
+        Cursor cursor =  getContentResolver().query( contentUri,
+                filePathColumn, // Which columns to return
+                null,       // WHERE clause; which rows to return (all rows)
+                null,       // WHERE clause selection arguments (none)
+                null); // Order-by clause (ascending by name)
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+
+        return cursor.getString(column_index);
     }
 
     private void saveAttachDirPath() {
@@ -437,7 +469,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
     private class UpdateTask extends AsyncTask<String, Void, Boolean> {
 
-        
+
         private final ProgressDialog dialog;
 
         public UpdateTask(Context context) {
@@ -489,7 +521,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
     private class DeleteTask extends AsyncTask<String, Void, Boolean> {
 
-       
+
         private final ProgressDialog dialog;
 
         public DeleteTask(Context context) {
@@ -542,7 +574,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
     private class AcceptEditTask extends AsyncTask<String, Void, Boolean> {
 
-      
+
         private final ProgressDialog dialog;
 
         public AcceptEditTask(Context context) {
@@ -595,7 +627,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
     private class LoadTask extends AsyncTask<String, Void, Boolean> {
 
-   
+
         private final ProgressDialog dialog;
 
         public LoadTask(Context context) {
@@ -646,7 +678,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
 
     private class PostTask extends AsyncTask<String, Void, Boolean> {
 
-     
+
         private final ProgressDialog dialog;
         private String mPostResult = null;
         private String mError = null;
@@ -835,11 +867,13 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
         }
         return true;
     }
-    
-    public void hidePanels(){
+
+    public void hidePanels() {
         getSupportActionBar().hide();
         m_BottomPanel.setVisibility(View.GONE);
     }
+
+
 
     public static final class MenuFragment extends SherlockFragment {
         public MenuFragment() {
@@ -873,7 +907,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
             //item.setVisible(Client.INSTANCE.getLogined());
             item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                     getInterface().hidePanels();
+                    getInterface().hidePanels();
 //                    getInterface().getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 //                    getInterface().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
                     return true;
@@ -888,7 +922,7 @@ public class EditPostPlusActivity extends SherlockFragmentActivity {
             if (TextUtils.isEmpty(body))
                 return true;
 
-            if (((EditPostPlusActivity) getActivity()).getConfirmSend() ) {
+            if (((EditPostPlusActivity) getActivity()).getConfirmSend()) {
                 new AlertDialog.Builder(getActivity())
                         .setTitle("Уверены?")
                         .setMessage("Подтвердите отправку")

@@ -81,6 +81,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
 
     private static void configureOptionsMenu(final Context context, final Handler mHandler, com.actionbarsherlock.view.SubMenu optionsMenu, final org.softeg.slartus.forpda.classes.Topic topic,
                                              Boolean addFavorites, final String shareItUrl) {
+
         optionsMenu.clear();
 
         if (Client.INSTANCE.getLogined() && topic != null) {
@@ -194,6 +195,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
         });
     }
 
+    private com.actionbarsherlock.view.MenuItem m_EditPost;
     @Override
     public void onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu, final com.actionbarsherlock.view.MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
@@ -214,7 +216,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
             SubMenu subMenu = menu.addSubMenu("Найти на странице").setIcon(android.R.drawable.ic_menu_search);
             subMenu.getItem().setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
 
-            item = subMenu.add("Найти на странице")
+            subMenu.add("Найти на странице")
                     .setIcon(android.R.drawable.ic_menu_search)
                     .setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
@@ -224,7 +226,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
                             return true;
                         }
                     });
-            item = subMenu.add("Найти в этой теме")
+            subMenu.add("Найти в этой теме")
                     .setIcon(android.R.drawable.ic_menu_search)
                     .setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
@@ -269,6 +271,18 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
                             return true;
                         }
                     });
+
+            m_EditPost = menu.add("Написать")
+                    .setIcon(android.R.drawable.ic_menu_edit)
+                    .setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+
+                        public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
+                            getInterface().toggleMessagePanelVisibility();
+
+                            return true;
+                        }
+                    });
+            m_EditPost.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 
 
             menu.add("Обновить")
@@ -366,7 +380,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
                 }
             });
 
-            menu.add("Закрыть")
+            item =menu.add("Закрыть")
                     .setIcon(android.R.drawable.ic_menu_close_clear_cancel)
                     .setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                         public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
@@ -397,7 +411,7 @@ public final class TopicViewMenuFragment extends ProfileMenuFragment {
                             return true;
                         }
                     });
-
+            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         } catch (Exception ex) {
             Log.e(getActivity(), ex);
         }

@@ -18,6 +18,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,12 +27,10 @@ import com.actionbarsherlock.app.SherlockDialogFragment;
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
-import org.softeg.slartus.forpda.BaseFragmentActivity;
-import org.softeg.slartus.forpda.Client;
+import org.softeg.slartus.forpda.*;
 import org.softeg.slartus.forpda.classes.BbCodesPanel;
 import org.softeg.slartus.forpda.common.HtmlUtils;
 import org.softeg.slartus.forpda.common.Log;
-import org.softeg.slartus.forpda.R;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.IOException;
@@ -110,8 +109,53 @@ public class EditMailActivity extends BaseFragmentActivity {
                 }
             }
         }
-
+        showWarning(this);
     }
+
+    public static void showWarning(final Activity context) {
+        if(isWarningAccepted())return ;
+        String text = "Это устаревшая версия ЛС. Пользуйтесь QMS 2.0";
+
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setIcon(R.drawable.icon)
+                .setTitle("Объявление")
+                .setMessage(Html.fromHtml(text))
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton("Не показывать больше", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        setWarningAccepted();
+                    }
+                })
+                .setNegativeButton("Читать новость", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        NewsActivity.shownews(context, "http://4pda.ru/2013/02/04/88346/");
+                    }
+                })
+                .create();
+        dialog.show();
+        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+        textView.setTextSize(12);
+
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private static boolean isWarningAccepted() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MyApp.getContext());
+        return preferences.getBoolean("mail.warning.accepted",false);
+    }
+
+    private static void setWarningAccepted() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(MyApp.getContext());
+        SharedPreferences.Editor editor=preferences.edit();
+        editor.putBoolean("mail.warning.accepted",true);
+        editor.commit();
+    }
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {

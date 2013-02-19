@@ -2,6 +2,16 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
+    <excludeFromCompile>
+      <directory url="file://$PROJECT_DIR$/Externals/4pdaApi/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/chrisbanes-Android-PullToRefresh/library/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/FileExplorer/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/QuickActions/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/AndroidBillingLibrary/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/android-sqlite-asset-helper-master/core/gen" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/Externals/ActionBarSherlock/library/gen" includeSubdirectories="true" />
+    </excludeFromCompile>
     <resourceExtensions />
     <wildcardResourcePatterns>
       <entry name="?*.properties" />
@@ -15,7 +25,11 @@
       <entry name="?*.tld" />
       <entry name="?*.ftl" />
     </wildcardResourcePatterns>
-    <annotationProcessing enabled="false" useClasspath="true" />
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+    </annotationProcessing>
   </component>
 </project>
 

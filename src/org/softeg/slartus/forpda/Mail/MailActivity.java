@@ -85,6 +85,7 @@ public class MailActivity extends BrowserViewsFragmentActivity implements MailAc
 
         String url = "http://4pda.ru/forum/index.php?act=Msg&CODE=03&MSID=" + m_Id;
         showMail(url);
+        EditMailActivity.showWarning(this);
     }
 
 
@@ -244,22 +245,22 @@ public class MailActivity extends BrowserViewsFragmentActivity implements MailAc
 
         @Override
         public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-            com.actionbarsherlock.view.MenuItem item = menu.add("Ответить").setIcon(R.drawable.reply);
-            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
-                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                    MailActivity activity=(MailActivity)getActivity();
-                    if(activity.getMail()==null)return false;
+//            com.actionbarsherlock.view.MenuItem item = menu.add("Ответить").setIcon(R.drawable.reply);
+//            item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+//                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+//                    MailActivity activity=(MailActivity)getActivity();
+//                    if(activity.getMail()==null)return false;
+//
+//                    EditMailActivity.reply(getActivity(),
+//                            "CODE=04&act=Msg&MID=" + activity.getMail().getUserId() + "&MSID=" + activity.getMail().getId(),
+//                            activity.getMail().getUser(),
+//                            activity.getMail().getTheme());
+//                    return true;
+//                }
+//            });
+//            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
 
-                    EditMailActivity.reply(getActivity(),
-                            "CODE=04&act=Msg&MID=" + activity.getMail().getUserId() + "&MSID=" + activity.getMail().getId(),
-                            activity.getMail().getUser(),
-                            activity.getMail().getTheme());
-                    return true;
-                }
-            });
-            item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-            item = menu.add("Удалить").setIcon(android.R.drawable.ic_menu_delete);
+            com.actionbarsherlock.view.MenuItem item = menu.add("Удалить").setIcon(android.R.drawable.ic_menu_delete);
             item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
                     MailActivity activity=(MailActivity)getActivity();

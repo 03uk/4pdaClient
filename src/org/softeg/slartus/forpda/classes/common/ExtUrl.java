@@ -1,12 +1,17 @@
 package org.softeg.slartus.forpda.classes.common;
 
+import android.R;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -65,29 +70,42 @@ public class ExtUrl {
     }
 
     public static void showSelectActionDialog(final Context context, final String url) {
-        CharSequence[] items = new CharSequence[]{"Открыть в браузере", "Поделиться ссылкой", "Скопировать ссылку"};
-        new AlertDialog.Builder(context)
-                .setTitle(url)
-                .setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                        switch (i) {
-                            case 0://Открыть в браузере
-                                showInBrowser(context, url);
-                                break;
-                            case 1:// Поделиться ссылкой
-                                shareIt(context, url);
-                                break;
-                            case 2:// Скопировать ссылку
-                                copyLinkToClipboard(context, url);
-                                break;
-                        }
-                    }
-                }
-                )
+
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View layout = inflater.inflate(org.softeg.slartus.forpda. R.layout.link_dialog, null);
+
+        final AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle("Ссылка...")
+                .setView(layout)
                 .setNegativeButton("Отмена",null)
                 .setCancelable(true)
-                .create()
-                .show();
+                .create();
+
+        ((TextView)layout.findViewById(org.softeg.slartus.forpda.R.id.text)).setText(url);
+        layout.findViewById(org.softeg.slartus.forpda.R.id.rbShowInBrowser).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+                showInBrowser(context, url);
+            }
+        });
+        layout.findViewById(org.softeg.slartus.forpda.R.id.rbShareIt).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+                shareIt(context, url);
+            }
+        });
+        layout.findViewById(org.softeg.slartus.forpda.R.id.rbCopyToClipboard).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+                copyLinkToClipboard(context, url);
+            }
+        });
+
+
+        dialog.show();
+
     }
 }

@@ -27,6 +27,7 @@ import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
+import org.softeg.slartus.forpda.qms_2_0.QmsNewThreadActivity;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -119,20 +120,13 @@ public class SearchResultView extends LinearLayout implements IWebViewContainer,
         // не забыть менять в ForumUser
         final QuickAction mQuickAction = new QuickAction(getContext());
 
-        int sendLSPosition = -1;
-        if (Client.INSTANCE.getLogined()) {
-            ActionItem actionItem = new ActionItem();
-            // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("   ЛС   ");
 
-            sendLSPosition = mQuickAction.addActionItem(actionItem);
-        }
 
         int sendQmsPosition = -1;
         if (Client.INSTANCE.getLogined()) {
             ActionItem actionItem = new ActionItem();
             // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("   QMS   ");
+            actionItem.setTitle("Сообщения (QMS)");
 
             sendQmsPosition = mQuickAction.addActionItem(actionItem);
         }
@@ -146,16 +140,14 @@ public class SearchResultView extends LinearLayout implements IWebViewContainer,
         if (mQuickAction.getItemsCount() == 0) return;
 
 
-        final int finalSendLSPosition = sendLSPosition;
+
         final int finalSendQmsPosition = sendQmsPosition;
         final int finalShowProfilePosition = showProfilePosition;
         mQuickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
             public void onItemClick(int pos) {
                 try {
-                   if (pos == finalSendLSPosition) {
-                       EditMailActivity.sendMessage((Activity)getContext(),"CODE=04&act=Msg&MID=" + userId,userNick,true);
-                    } else if (pos == finalSendQmsPosition) {
-                        QmsChatActivity.openChat(getContext(), userId, userNick);
+                   if (pos == finalSendQmsPosition) {
+                        QmsNewThreadActivity.showUserNewThread(getContext(), userId, userNick);
                     } else if (pos == finalShowProfilePosition) {
                         ProfileActivity.startActivity(getContext(), userId, userNick);
                     }

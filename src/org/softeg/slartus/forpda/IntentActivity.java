@@ -2,6 +2,7 @@ package org.softeg.slartus.forpda;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import org.apache.http.cookie.Cookie;
 import org.softeg.slartus.forpda.Mail.EditMailActivity;
 import org.softeg.slartus.forpda.Mail.MailActivity;
 import org.softeg.slartus.forpda.Tabs.Tabs;
@@ -19,9 +21,11 @@ import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.download.DownloadsService;
 import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
+import org.softeg.slartus.forpda.qms_2_0.QmsContactThemesActivity;
 import org.softeg.slartus.forpda.topicview.ThemeActivity;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -239,6 +243,9 @@ public class IntentActivity extends Activity {
         if (tryShowQms(context, url, finishActivity))
             return true;
 
+        if (tryShowQms_2_0(context, url, finishActivity))
+            return true;
+
         if (tryShowPm(context, url, finishActivity))
             return true;
 
@@ -268,8 +275,8 @@ public class IntentActivity extends Activity {
         return false;
     }
 
-    public static boolean tryShowQuote(Activity context, String url, Boolean finish) {
-        Matcher m = Pattern.compile("http://4pda.ru/forum/index.php?act=Post&CODE=02&f=285&t=271502&qpid=16587169").matcher(url);
+    public static boolean tryShowQms(Activity context, String url, Boolean finish) {
+        Matcher m = Pattern.compile("http://4pda.ru/forum/index.php\\?autocom=qms&mid=(\\d+)").matcher(url);
         if (m.find()) {
             QmsChatActivity.openChat(context, m.group(1), "");
 
@@ -280,10 +287,10 @@ public class IntentActivity extends Activity {
         return false;
     }
 
-    public static boolean tryShowQms(Activity context, String url, Boolean finish) {
-        Matcher m = Pattern.compile("http://4pda.ru/forum/index.php\\?autocom=qms&mid=(\\d+)").matcher(url);
+    public static boolean tryShowQms_2_0(Activity context, String url, Boolean finish) {
+        Matcher m = Pattern.compile("4pda.ru/forum/index.php\\?act=qms&mid=(\\d+)").matcher(url);
         if (m.find()) {
-            QmsChatActivity.openChat(context, m.group(1), "");
+            QmsContactThemesActivity.showThemes(context, m.group(1), "");
 
             if (finish)
                 context.finish();
@@ -350,14 +357,17 @@ public class IntentActivity extends Activity {
     }
 
     public static void downloadFileStart(final Activity activity, final Handler handler, final String url, final Boolean finish) {
+
         if (PreferenceManager.getDefaultSharedPreferences(activity.getApplicationContext()).getBoolean("files.ConfirmDownload", true)) {
             new AlertDialog.Builder(activity)
                     .setTitle("Уверены?")
                     .setMessage("Начать закачку файла?")
                     .setPositiveButton("ОК", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            DownloadsService.download(activity, url);
                             dialogInterface.dismiss();
+
+                            DownloadsService.download(activity, url);
+
                             if (finish)
                                 activity.finish();
                         }
@@ -382,6 +392,7 @@ public class IntentActivity extends Activity {
             Intent marketIntent = new Intent(
                     Intent.ACTION_VIEW,
                     Uri.parse(url));
+
             context.startActivity(Intent.createChooser(marketIntent, "Открыть с помощью"));
         } catch (Exception ex) {
             Log.e(context, new NotReportException("Не найдено ни одно приложение для ссылки: " + url));

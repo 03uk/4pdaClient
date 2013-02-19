@@ -1,24 +1,18 @@
 package org.softeg.slartus.forpda.classes;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.webkit.CacheManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ImageButton;
 import org.softeg.slartus.forpda.MyApp;
 import org.softeg.slartus.forpda.classes.common.ExtPreferences;
 import org.softeg.slartus.forpda.common.Log;
-
-import java.lang.reflect.Method;
 
 /**
  * Created by IntelliJ IDEA.

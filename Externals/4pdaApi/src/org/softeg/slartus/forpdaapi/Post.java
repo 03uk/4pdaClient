@@ -18,6 +18,7 @@ public class Post {
 
     /**
      * Удаляет пост
+     *
      * @param httpClient
      * @param forumId
      * @param topicId
@@ -36,28 +37,28 @@ public class Post {
 
     /**
      * Возвращает страницу с новым постом
+     *
      * @param httpClient
      * @param forumId
-     * @param themeId
      * @param authKey
      * @return
      * @throws Exception
      */
-    public static String getNewPostPage(IHttpClient httpClient,String forumId, String topicId, String authKey) throws IOException {
-        return getEditPage( httpClient, forumId,  topicId,  "-1",  authKey);
+    public static String getNewPostPage(IHttpClient httpClient, String forumId, String topicId, String authKey) throws IOException {
+        return getEditPage(httpClient, forumId, topicId, "-1", authKey);
     }
 
     /**
      * Возвращает страницу с редактируемым постом
+     *
      * @param httpClient
      * @param forumId
-     * @param themeId
-     * @param postId  -1, для создания нового поста
+     * @param postId     -1, для создания нового поста
      * @param authKey
      * @return
      * @throws Exception
      */
-    public static String getEditPage(IHttpClient httpClient,String forumId, String topicId, String postId, String authKey) throws IOException {
+    public static String getEditPage(IHttpClient httpClient, String forumId, String topicId, String postId, String authKey) throws IOException {
         String res;
         if (postId.equals("-1"))
             res = httpClient.performGet("http://4pda.ru/forum/index.php?act=post&do=reply_post&f=" + forumId
@@ -75,10 +76,11 @@ public class Post {
 
     /**
      * Проверка страницы редактирования поста на ошибки (пост удалён ранее или нет прав на редактирование и т.д. )
+     *
      * @param editPage
      * @return
      */
-    public static String checkEditPage(String editPage){
+    public static String checkEditPage(String editPage) {
         String startFlag = "<textarea name=\"Post\" rows=\"8\" cols=\"150\" style=\"width:98%; height:160px\" tabindex=\"0\">";
         int startIndex = editPage.indexOf(startFlag);
         if (startIndex == -1) {
@@ -96,19 +98,19 @@ public class Post {
 
     /**
      * Отправка изменений в посте
+     *
      * @param httpClient
      * @param forumId
      * @param themeId
      * @param authKey
      * @param postId
-     * @param enablesig включить подпись
-     * @param enableEmo включить смайлы
-     * @param post
+     * @param enablesig     включить подпись
+     * @param enableEmo     включить смайлы
      * @param addedFileList список айдишек уже загруженных файлов. Например, 0,1892529,1892530,1892533
      * @throws IOException
      */
-    public static void applyEdit(IHttpClient httpClient,String forumId, String themeId, String authKey, String postId, Boolean enablesig,
-                                   Boolean enableEmo, String postText, String addedFileList) throws IOException{
+    public static void applyEdit(IHttpClient httpClient, String forumId, String themeId, String authKey, String postId, Boolean enablesig,
+                                 Boolean enableEmo, String postText, String addedFileList) throws IOException {
 
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("act", "Post");
@@ -135,9 +137,9 @@ public class Post {
 
     /**
      * Быстрый ответ
+     *
      * @param httpClient
      * @param forumId
-     * @param themeId
      * @param authKey
      * @param attachPostKey
      * @param post
@@ -147,11 +149,11 @@ public class Post {
      * @return
      * @throws IOException
      */
-    public static String reply(IHttpClient httpClient,String forumId, String topicId, String authKey, String attachPostKey, String post,
-                                    Boolean enablesig, Boolean enableemo, String addedFileList, boolean quick) throws IOException {
+    public static String reply(IHttpClient httpClient, String forumId, String topicId, String authKey, String attachPostKey, String post,
+                               Boolean enablesig, Boolean enableemo, String addedFileList, boolean quick) throws IOException {
 
         Map<String, String> additionalHeaders = new HashMap<String, String>();
-        if(!quick){
+        if (!quick) {
             additionalHeaders.put("st", "0");
             additionalHeaders.put("removeattachid", "0");
             additionalHeaders.put("MAX_FILE_SIZE", "0");
@@ -162,21 +164,21 @@ public class Post {
             additionalHeaders.put("_upload_single_file", "1");
             additionalHeaders.put("file-list", addedFileList);
 
-        } else{
+        } else {
             additionalHeaders.put("fast_reply_used", "1");
         }
 
 
-        return quickReply( httpClient,additionalHeaders, forumId,  topicId,  authKey,  attachPostKey,  post,
-                     enablesig,  enableemo);
+        return quickReply(httpClient, additionalHeaders, forumId, topicId, authKey, attachPostKey, post,
+                enablesig, enableemo);
 
     }
 
     /**
      * Быстрый ответ
+     *
      * @param httpClient
      * @param forumId
-     * @param themeId
      * @param authKey
      * @param attachPostKey
      * @param post
@@ -185,8 +187,8 @@ public class Post {
      * @return
      * @throws IOException
      */
-    public static String quickReply(IHttpClient httpClient,Map<String, String> additionalHeaders,String forumId, String topicId, String authKey, String attachPostKey, String post,
-                        Boolean enablesig, Boolean enableemo) throws IOException {
+    public static String quickReply(IHttpClient httpClient, Map<String, String> additionalHeaders, String forumId, String topicId, String authKey, String attachPostKey, String post,
+                                    Boolean enablesig, Boolean enableemo) throws IOException {
 
         additionalHeaders.put("act", "Post");
         additionalHeaders.put("CODE", "03");
@@ -203,16 +205,16 @@ public class Post {
             additionalHeaders.put("enableemo", "yes");
 
 
-       // additionalHeaders.put("referer", "http://4pda.ru/forum/index.php?act=Post&CODE=03&f=" + forumId + "&t=" + topicId + "&st=20&auth_key=" + authKey + "&fast_reply_used=1");
+        // additionalHeaders.put("referer", "http://4pda.ru/forum/index.php?act=Post&CODE=03&f=" + forumId + "&t=" + topicId + "&st=20&auth_key=" + authKey + "&fast_reply_used=1");
 
         String res = httpClient.performPost("http://4pda.ru/forum/index.php", additionalHeaders);
-        
+
         return res;
 
 
     }
-    
-    public static String checkPostErrors(String page){
+
+    public static String checkPostErrors(String page) {
         Pattern checkPattern = Pattern.compile("\t\t<h4>Причина:</h4>\n" +
                 "\n" +
                 "\t\t<p>(.*?)</p>", Pattern.MULTILINE);
@@ -230,8 +232,8 @@ public class Post {
         return null;
     }
 
-    public static String attachFileFullVersion(IHttpClient httpClient,String forumId, String topicId, String authKey, String attachPostKey, String postId, Boolean enablesig,Boolean enableEmo,
-                                    String post, String filePath, String addedFileList) throws Exception {
+    public static String attachFileFullVersion(IHttpClient httpClient, String forumId, String topicId, String authKey, String attachPostKey, String postId, Boolean enablesig, Boolean enableEmo,
+                                               String post, String filePath, String addedFileList) throws Exception {
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("st", "0");
         additionalHeaders.put("act", "Post");
@@ -243,7 +245,7 @@ public class Post {
         additionalHeaders.put("CODE", "03");
         additionalHeaders.put("t", topicId);
 
-        if(attachPostKey!=null)
+        if (attachPostKey != null)
             additionalHeaders.put("attach_post_key", attachPostKey);
 
         additionalHeaders.put("parent_id", "0");
@@ -269,6 +271,7 @@ public class Post {
 
     /**
      * Аттачим файл к посту.
+     *
      * @param httpClient
      * @param forumId
      * @param topicId
@@ -283,20 +286,24 @@ public class Post {
      * @return
      * @throws Exception
      */
-    public static String attachFile(IHttpClient httpClient,String forumId, String topicId, String authKey, String attachPostKey, String postId, Boolean enablesig,Boolean enableEmo,
-                                 String post, String filePath, String addedFileList) throws Exception {
+    public static String attachFile(IHttpClient httpClient, String forumId, String topicId, String authKey,
+                                    String attachPostKey, String postId, Boolean enablesig, Boolean enableEmo,
+                                    String post, String filePath, String addedFileList) throws Exception {
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("st", "0");
-        additionalHeaders.put("act", "Post");
+
+
+
+
 
         additionalHeaders.put("f", forumId);
         additionalHeaders.put("auth_key", authKey);
         additionalHeaders.put("removeattachid", "0");
         additionalHeaders.put("MAX_FILE_SIZE", "0");
-        additionalHeaders.put("CODE", "03");
+
         additionalHeaders.put("t", topicId);
 
-        if(attachPostKey!=null)
+        if (attachPostKey != null)
             additionalHeaders.put("attach_post_key", attachPostKey);
 
         additionalHeaders.put("parent_id", "0");
@@ -307,9 +314,16 @@ public class Post {
         additionalHeaders.put("file-list", addedFileList);
 
 
-        if (!postId.equals("-1"))
+        if (!postId.equals("-1")) {
             additionalHeaders.put("p", postId);
+            additionalHeaders.put("act", "attach");
+            additionalHeaders.put("attach_rel_id", postId);
+            additionalHeaders.put("code", "attach_upload_process");
+        }else{
+            additionalHeaders.put("act", "Post");
 
+        }
+        additionalHeaders.put("CODE", "03");
         additionalHeaders.put("Post", post);
         if (enablesig)
             additionalHeaders.put("enablesig", "yes");
@@ -317,7 +331,11 @@ public class Post {
             additionalHeaders.put("enableEmo", "yes");
         additionalHeaders.put("iconid", "0");
 
-        return httpClient.uploadFile("http://4pda.ru/forum/index.php", filePath, additionalHeaders);
+        if (postId.equals("-1"))
+            return httpClient.uploadFile("http://4pda.ru/forum/index.php", filePath, additionalHeaders);
+
+        httpClient.uploadFile("http://4pda.ru/forum/index.php", filePath, additionalHeaders);
+        return getEditPage(httpClient, forumId, topicId, postId, authKey);
     }
 
     /**
@@ -334,18 +352,17 @@ public class Post {
      * @throws Exception
      */
     public static String deleteAttachedFile(IHttpClient httpClient, String forumId, String themeId, String authKey, String postId,
-                                            Boolean enablesig,Boolean enableemo,
+                                            Boolean enablesig, Boolean enableemo,
                                             String post, String attachToDeleteId, String fileList) throws Exception {
 
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("st", "0");
-        additionalHeaders.put("act", "Post");
 
         additionalHeaders.put("f", forumId);
         additionalHeaders.put("auth_key", authKey);
         additionalHeaders.put("removeattachid", "0");
         additionalHeaders.put("MAX_FILE_SIZE", "0");
-        additionalHeaders.put("CODE", "09");
+
         additionalHeaders.put("t", themeId);
         additionalHeaders.put("p", postId);
         additionalHeaders.put("ed-0_wysiwyg_used", "0");
@@ -357,18 +374,30 @@ public class Post {
         additionalHeaders.put("file-list", fileList);
         additionalHeaders.put("removeattach[" + attachToDeleteId + "]", "Удалить!");
 
+        if (!postId.equals("-1")) {
+            additionalHeaders.put("act", "attach");
+            additionalHeaders.put("code", "attach_upload_remove");
+            additionalHeaders.put("attach_rel_id", postId);
+            additionalHeaders.put("attach_id", attachToDeleteId);
+        }else{
+            additionalHeaders.put("act", "Post");
 
+        }
+        additionalHeaders.put("CODE", "03");
         if (enablesig)
             additionalHeaders.put("enablesig", "yes");
         if (enableemo)
             additionalHeaders.put("enableemo", "yes");
 
-
-        return httpClient.performPost("http://4pda.ru/forum/index.php", additionalHeaders);
+        if (postId.equals("-1"))
+            return httpClient.performPost("http://4pda.ru/forum/index.php", additionalHeaders);
+        httpClient.performPost("http://4pda.ru/forum/index.php", additionalHeaders);
+        return getEditPage(httpClient, forumId, themeId, postId, authKey);
     }
 
     /**
      * Жалоба на пост
+     *
      * @param httpClient
      * @param topicId
      * @param postId
@@ -376,7 +405,7 @@ public class Post {
      * @return Ошибка или пустая строка в случае успеха
      * @throws IOException
      */
-    public static String claim(IHttpClient httpClient,String topicId, String postId, String message) throws IOException {
+    public static String claim(IHttpClient httpClient, String topicId, String postId, String message) throws IOException {
         Map<String, String> additionalHeaders = new HashMap<String, String>();
         additionalHeaders.put("act", "report");
         additionalHeaders.put("send", "1");

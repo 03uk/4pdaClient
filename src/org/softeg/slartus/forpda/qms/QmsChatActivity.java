@@ -1,35 +1,37 @@
 package org.softeg.slartus.forpda.qms;
 
-import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
-import org.softeg.slartus.forpda.BaseFragmentActivity;
-import org.softeg.slartus.forpda.Client;
-import org.softeg.slartus.forpda.MyApp;
-import org.softeg.slartus.forpda.R;
+import org.softeg.slartus.forpda.*;
 import org.softeg.slartus.forpda.classes.common.ExtPreferences;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpdaapi.Qms;
 
-import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -62,7 +64,7 @@ public class QmsChatActivity extends BaseFragmentActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
 
         createActionMenu();
-
+        findViewById(R.id.input_panel).setVisibility(View.GONE);
         edMessage = (EditText) findViewById(R.id.edMessage);
         findViewById(R.id.btnSend).setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
@@ -74,20 +76,67 @@ public class QmsChatActivity extends BaseFragmentActivity {
         wvChat = (WebView) findViewById(R.id.wvChat);
         wvChat.getSettings().setBuiltInZoomControls(true);
         wvChat.getSettings().setSupportZoom(true);
-        if(!MyApp.INSTANCE.isWhiteTheme()){
+
+        if (!MyApp.INSTANCE.isWhiteTheme()) {
             wvChat.setBackgroundColor(MyApp.INSTANCE.getThemeStyleWebViewBackground());
-            wvChat.loadData("<html><head></head><body bgcolor="+MyApp.INSTANCE.getCurrentThemeName()+"></body></html>","text/html", "UTF-8");
+            wvChat.loadData("<html><head></head><body bgcolor=" + MyApp.INSTANCE.getCurrentThemeName() + "></body></html>", "text/html", "UTF-8");
         }
+        wvChat.setWebViewClient(new MyWebViewClient());
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
 
         m_Id = extras.getString("UserId");
         m_Nick = extras.getString("UserNick");
         setTitle(m_Nick + " - QMS");
+        showWarning();
+    }
+
+    private void showWarning() {
+        if(isWarningAccepted())return ;
+        String text = "Это устаревшая версия QMS. Пользуйтесь QMS 2.0";
+
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setIcon(R.drawable.icon)
+                .setTitle("Объявление")
+                .setMessage(Html.fromHtml(text))
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton("Не показывать больше", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        setWarningAccepted();
+                    }
+                })
+                .setNegativeButton("Читать новость", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        NewsActivity.shownews(QmsChatActivity.this,"http://4pda.ru/2013/02/04/88346/");
+                    }
+                })
+                .create();
+        dialog.show();
+        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+        textView.setTextSize(12);
+
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private boolean isWarningAccepted() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        return preferences.getBoolean("qms.warning.accepted",false);
+    }
+
+    private void setWarningAccepted() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        SharedPreferences.Editor editor=preferences.edit();
+        editor.putBoolean("qms.warning.accepted",true);
+        editor.commit();
 
     }
-    
-    public static void openChat(Context activity,String userId, String userNick){
+
+    public static void openChat(Context activity, String userId, String userNick) {
         Intent intent = new Intent(activity, QmsChatActivity.class);
         intent.putExtra("UserId", userId);
         intent.putExtra("UserNick", userNick);
@@ -136,19 +185,19 @@ public class QmsChatActivity extends BaseFragmentActivity {
         return true;
     }
 
-    private void loadPrefs(){
+    private void loadPrefs() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        m_MessagesCount= Integer.toString(ExtPreferences.parseInt(preferences, "qms.chat.messages_count", 10));
-        m_UpdateTimeout= ExtPreferences.parseInt(preferences,"qms.chat.update_timer",15)*1000;
+        m_MessagesCount = Integer.toString(ExtPreferences.parseInt(preferences, "qms.chat.messages_count", 10));
+        m_UpdateTimeout = ExtPreferences.parseInt(preferences, "qms.chat.update_timer", 15) * 1000;
     }
 
-    private String transformChatBody(String chatBody){
-        if(MyApp.INSTANCE.isWhiteTheme())
+    private String transformChatBody(String chatBody) {
+        if (MyApp.INSTANCE.isWhiteTheme())
             return chatBody;
         // черный фон+серый текст
-        return chatBody.replace("<body ","<body bgcolor=\"black\" text=\"#a0a0a0\" ");
+        return chatBody.replace("<body ", "<body bgcolor=\"black\" text=\"#a0a0a0\" ");
     }
-    
+
     private void reLoadChatSafe() {
         uiHandler.post(new Runnable() {
             public void run() {
@@ -167,10 +216,14 @@ public class QmsChatActivity extends BaseFragmentActivity {
         final String finalChatBody = chatBody;
         uiHandler.post(new Runnable() {
             public void run() {
-                setSupportProgressBarIndeterminateVisibility(false);
+
                 if (finalEx == null) {
                     m_LastMessageId = Qms.getLastMessageId(finalChatBody);
+
+
                     wvChat.loadDataWithBaseURL("\"file:///android_asset/\"", finalChatBody, "text/html", "UTF-8", null);
+
+
                 } else {
                     if (finalEx != null)
                         Log.e(QmsChatActivity.this, finalEx);
@@ -179,6 +232,7 @@ public class QmsChatActivity extends BaseFragmentActivity {
                                 Toast.LENGTH_SHORT).show();
 
                 }
+                setSupportProgressBarIndeterminateVisibility(false);
             }
         });
 
@@ -210,6 +264,20 @@ public class QmsChatActivity extends BaseFragmentActivity {
 
     private String m_MessageText = null;
 
+    private void saveScale(float scale) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putFloat("qms.ZoomLevel", scale);
+        editor.commit();
+    }
+
+    private float loadScale() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+        return prefs.getFloat("qms.ZoomLevel", wvChat.getScrollY());
+
+    }
+
     private void startSendMessage() {
         m_MessageText = edMessage.getText().toString();
         if (TextUtils.isEmpty(m_MessageText)) {
@@ -221,13 +289,13 @@ public class QmsChatActivity extends BaseFragmentActivity {
 
     private class SendTask extends AsyncTask<String, Void, Boolean> {
 
-      
+
         private final ProgressDialog dialog;
         public String m_ChatBody;
 
 
         public SendTask(Context context) {
-            
+
             dialog = new ProgressDialog(context);
         }
 
@@ -309,5 +377,52 @@ public class QmsChatActivity extends BaseFragmentActivity {
             });
             item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         }
+    }
+
+    private class MyWebViewClient extends WebViewClient {
+
+        public MyWebViewClient() {
+            m_Scale = loadScale();
+        }
+
+        private float m_Scale;
+        private int m_ScrollY;
+
+        @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            super.onPageStarted(view, url, favicon);
+
+            //  setSupportProgressBarIndeterminateVisibility(true);
+
+            m_ScrollY = wvChat.getScrollY();
+            wvChat.setInitialScale((int) (m_Scale * 100));
+            //ThemeActivity.this.setProgressBarIndeterminateVisibility(true);
+        }
+
+        @Override
+        public void onScaleChanged(android.webkit.WebView view, float oldScale, float newScale) {
+            super.onScaleChanged(view, oldScale, newScale);
+            m_Scale = wvChat.getScale();
+            saveScale(m_Scale);
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+
+
+            try {
+
+                wvChat.setInitialScale((int) (m_Scale * 100));
+
+            } catch (Throwable ex) {
+                Log.e(QmsChatActivity.this, ex);
+            }
+
+            setSupportProgressBarIndeterminateVisibility(false);
+
+        }
+
+
     }
 }

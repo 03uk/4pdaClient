@@ -27,4 +27,14 @@ public class QmsUsers extends ArrayList<QmsUser>{
         }
         return senders;
     }
+
+    public int unreadMessageUsersCount(){
+        int senders = 0;
+
+        for(int i=0;i<this.size();i++){
+            if(!TextUtils.isEmpty(this.get(i).getNewMessagesCount()))
+                senders += 1;
+        }
+        return senders;
+    }
 }

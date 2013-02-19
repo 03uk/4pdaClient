@@ -1,3 +1,66 @@
+/*** QMS ***/
+.thread_timeline{
+text-transform:lowercase;
+color: #1860a8;
+text-align: center;
+margin: 5px;
+}
+.thread_message {
+display: table;
+padding: 8px 3px;
+margin-left:-5px;
+margin-right:-10px;
+width:100%;
+color: #707070;
+border-top: 4px #607890 solid;
+border-radius:3px;
+}
+.thread_message > * {
+display: table-cell;
+}
+.in_message{
+background: #eaeaea;
+}
+.out_message{
+background: #fff;
+}
+.message_checkbox {
+display: none;
+}
+.checkbox{}
+.thread_message .avatar {
+background-position: 50% 0px;
+}
+.avatar {
+background-position: 50% 0px;
+background-repeat: no-repeat;
+background-size: contain;
+height: 3.2em;
+vertical-align: top;
+width: 3.2em;
+}
+.message_content {
+padding: 0px 0px 0px 7px;
+}
+.thread_message .member {
+color: #4373C3;
+float: left;
+font-weight: 700;
+}
+.thread_message .date {
+float: right;
+}
+.in_message .date {
+color:#fff;
+}
+.out_message .date {
+color:#ddd;
+}
+.thread_message .msg {
+padding-bottom: 3px;
+color: #607890;
+}
+/******/
 /*вид как в браузере
 .post_nick {
 font-size: 17px;

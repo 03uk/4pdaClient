@@ -33,34 +33,8 @@ public class ProfileMenuFragment extends SherlockFragment {
         setHasOptionsMenu(true);
     }
 
-    //
-//    public void setMail() {
-//        if(m_Menu==null)return ;
-//
-//        if(m_Menu.findItem(m_MailItemId)!=null){
-//            if(Client.INSTANCE.getMailsCount()==0)
-//                m_Menu.removeItem(m_MailItemId);
-//            else
-//                m_Menu.findItem(m_MailItemId).setTitle("Новых писем: "+Client.INSTANCE.getMailsCount());
-//        }else{
-//            if(Client.INSTANCE.getMailsCount()>0){
-//                MenuItem item= m_Menu.add(Menu.NONE,Menu.NONE,0, "Новых писем: "+Client.INSTANCE.getMailsCount()).setIcon(R.drawable.mail);
-//                item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//                    public boolean onMenuItemClick(MenuItem item) {
-//                        Intent intent = new Intent(getActivity(), MailBoxActivity.class);
-//
-//
-//                        getActivity().startActivity(intent);
-//                        return true;
-//                    }
-//                });
-//                item.setShowAsAction(com.actionbarsherlock.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
-//                m_MailItemId=item.getItemId();
-//            }
-//        }
-//
-//    }
-//
+
+
     private int getUserIconRes() {
         Boolean logged = Client.INSTANCE.getLogined();
         if (logged) {
@@ -68,7 +42,7 @@ public class ProfileMenuFragment extends SherlockFragment {
 //            Boolean showToast = preferences.getBoolean("ShowNewQmsLsToast", false);
 //            String message = null;
             try {
-                if (Client.INSTANCE.getMailsCount() > 0 && !TextUtils.isEmpty(Client.INSTANCE.getQms())) {
+                if (Client.INSTANCE.getMailsCount() > 0 && (!TextUtils.isEmpty(Client.INSTANCE.getQms())||Client.INSTANCE.getQms_2_0_Count()>0)) {
 //                    if (showToast)
 //                        message = "QMS: " + Client.INSTANCE.getQms() + "\nЛС: " + Client.INSTANCE.getMailsCount();
                     return R.drawable.user_mail_qms;
@@ -79,7 +53,7 @@ public class ProfileMenuFragment extends SherlockFragment {
 //                        message = "ЛС: " + Client.INSTANCE.getMailsCount();
                     return R.drawable.user_mail;
                 }
-                if (!TextUtils.isEmpty(Client.INSTANCE.getQms())) {
+                if (!TextUtils.isEmpty(Client.INSTANCE.getQms())||Client.INSTANCE.getQms_2_0_Count()>0) {
 //                    if (showToast)
 //                        message = "QMS: " + Client.INSTANCE.getQms();
                     return R.drawable.user_qms;
@@ -103,7 +77,7 @@ public class ProfileMenuFragment extends SherlockFragment {
         mUserMenuItem.getItem().setTitle(Client.INSTANCE.getUser());
         mUserMenuItem.clear();
         if (logged) {
-            String text = Client.INSTANCE.getMailsCount() > 0 ? ("Личный ящик (" + Client.INSTANCE.getMailsCount() + ")") : "Личный ящик";
+            String text = Client.INSTANCE.getMailsCount() > 0 ? ("OLD: ЛС (" + Client.INSTANCE.getMailsCount() + ")") : "OLD: ЛС";
 
             mUserMenuItem.add(text).setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
@@ -117,11 +91,26 @@ public class ProfileMenuFragment extends SherlockFragment {
                     return true;
                 }
             });
-            text = !TextUtils.isEmpty(Client.INSTANCE.getQms()) ? ("QMS (" + Client.INSTANCE.getQms().split(",").length + ")") : "QMS";
+            text = !TextUtils.isEmpty(Client.INSTANCE.getQms()) ? ("OLD: QMS (" + Client.INSTANCE.getQms().split(",").length + ")") : "OLD: QMS";
             mUserMenuItem.add(text).setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
                     Intent intent = new Intent(getActivity(), QmsContactsActivity.class);
+
+                    intent.putExtra("activity", getActivity().getClass().toString());
+                    getActivity().startActivity(intent);
+
+
+                    return true;
+                }
+            });
+
+
+            text = Client.INSTANCE.getQms_2_0_Count()>0 ? ("QMS 2.0 (" + Client.INSTANCE.getQms_2_0_Count() + ")") : "QMS 2.0";
+            mUserMenuItem.add(text).setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
+
+                public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem item) {
+                    Intent intent = new Intent(getActivity(), org.softeg.slartus.forpda.qms_2_0. QmsContactsActivity.class);
 
                     intent.putExtra("activity", getActivity().getClass().toString());
                     getActivity().startActivity(intent);

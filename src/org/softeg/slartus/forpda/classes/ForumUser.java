@@ -18,6 +18,7 @@ import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.R;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
+import org.softeg.slartus.forpda.qms_2_0.QmsNewThreadActivity;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -46,20 +47,13 @@ public class ForumUser {
 //            insertNickPosition = mQuickAction.addActionItem(actionItem);
 //        }
 
-        int sendLSPosition = -1;
-        if (Client.INSTANCE.getLogined()) {
-            ActionItem actionItem = new ActionItem();
-            // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("ЛС");
 
-            sendLSPosition = mQuickAction.addActionItem(actionItem);
-        }
 
         int sendQmsPosition = -1;
         if (Client.INSTANCE.getLogined()) {
             ActionItem actionItem = new ActionItem();
             // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("QMS");
+            actionItem.setTitle("Сообщения (QMS)");
 
             sendQmsPosition = mQuickAction.addActionItem(actionItem);
         }
@@ -72,17 +66,14 @@ public class ForumUser {
         if (mQuickAction.getItemsCount() == 0) return;
 
         final int finalInsertNickPosition = insertNickPosition;
-        final int finalSendLSPosition = sendLSPosition;
+
         final int finalSendQmsPosition = sendQmsPosition;
         final int finalShowProfilePosition = showProfilePosition;
         mQuickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
             public void onItemClick(int pos) {
                 try {
-                    if (pos == finalSendLSPosition) {
-                        EditMailActivity.sendMessage(context,"CODE=04&act=Msg&MID=" + userId,userNick,true);
-
-                    } else if (pos == finalSendQmsPosition) {
-                        QmsChatActivity.openChat(context, userId, userNick);
+                   if (pos == finalSendQmsPosition) {
+                        QmsNewThreadActivity.showUserNewThread(context, userId, userNick);
                     } else if (pos == finalShowProfilePosition) {
                         ProfileActivity.startActivity(context, userId, userNick);
                     }

@@ -15,7 +15,6 @@ import org.softeg.slartus.forpda.classes.Topic;
 import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpdaapi.OnProgressChangedListener;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,14 +84,16 @@ public class DevicesTab extends TreeTab {
     @Override
     protected void listItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         l = ListViewMethodsBridge.getItemId(getContext(), i, l);
-        if (l < 0||m_ForumsAdapter.getCount()<=l) return;
+
         if ("ForumsAdapter".equals(m_CurrentAdapter)) {
+            if (l < 0||m_ForumsAdapter.getCount()<=l) return;
             Forum f = m_ForumsAdapter.getItem((int) l);
             if (f.hasChildForums())
                 showForum(f);
             else
                 loadForums(f);
         } else {
+            if (l < 0||m_ThemeAdapter.getCount()<=l) return;
             Topic topic = m_ThemeAdapter.getItem((int) l);
             Intent intent = new Intent(getContext(), DevDbDeviceActivity.class);
             intent.putExtra(DevDbDeviceActivity.DEVICE_ID_KEY, topic.getId());

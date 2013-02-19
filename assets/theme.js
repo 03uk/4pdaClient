@@ -80,9 +80,15 @@ function advPost(){
 
 function insertText(text)
 {
-	var textarea_obj = elem ( "Post" );
-	textarea_obj.value+=text;
-	return false;
+try{
+     window.HTMLOUT.insertTextToPost(text);
+}catch(err){
+
+}
+
+//	var textarea_obj = elem ( "Post" );
+//	textarea_obj.value+=text;
+//	return false;
 }
 
 function getDivInnerText(msgId){

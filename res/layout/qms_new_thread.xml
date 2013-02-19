@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        android:padding="5dip"
+        style="?defaultColors">
+    <EditText
+            android:id="@+id/username"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:capitalize="sentences"
+            android:singleLine="true"
+            style="?defaultColors"
+            android:hint="Кому"
+            android:background="@drawable/textlines"
+            android:padding="5dip"
+            android:textCursorDrawable="@null"
+            >
+
+        <requestFocus/>
+    </EditText>
+    <EditText
+            android:id="@+id/title"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:capitalize="sentences"
+            android:singleLine="true"
+            style="?defaultColors"
+            android:hint="Введите тему..."
+            android:background="@drawable/textlines"
+            android:padding="5dip"
+            android:textCursorDrawable="@null"
+            >
+
+        <requestFocus/>
+    </EditText>
+    <EditText
+            android:background="@drawable/textlines"
+            android:padding="5dip"
+            style="?defaultColors"
+            android:hint="Введите сообщение..."
+            android:id="@+id/message"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/bottomPanel"
+            android:layout_below="@+id/topPanel"
+            android:capitalize="sentences"
+            android:gravity="top"
+            android:minLines="10"
+            android:scrollHorizontally="false"
+            android:textCursorDrawable="@null"
+            android:singleLine="false">
+
+        <requestFocus/>
+    </EditText>
+
+</LinearLayout>

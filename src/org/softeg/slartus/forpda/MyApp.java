@@ -10,9 +10,13 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
+import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockDialogFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import org.softeg.slartus.forpda.classes.common.ArrayUtils;
@@ -20,10 +24,16 @@ import org.softeg.slartus.forpda.classes.common.ExtPreferences;
 import org.softeg.slartus.forpda.classes.common.FileUtils;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.prefs.DonateActivity;
+import org.softeg.slartus.forpda.topicview.ThemeActivity;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * User: slinkin
@@ -199,51 +209,56 @@ public class MyApp extends android.app.Application {
     private static Boolean s_PromoChecked = false;
 
     public void showPromo(final SherlockFragmentActivity sherlockFragmentActivity) {
-        if (s_PromoChecked) return;
-        s_PromoChecked = true;
+        try {
+            if (s_PromoChecked) return;
+            s_PromoChecked = true;
 
-        //    if (isBetaVersion(sherlockFragmentActivity)) return;
-        //    if (isDonateVersion(sherlockFragmentActivity)) return;
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        if(prefs.getBoolean("donate.DontShow",false)) return;
+            //    if (isBetaVersion(sherlockFragmentActivity)) return;
+            //    if (isDonateVersion(sherlockFragmentActivity)) return;
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            if (prefs.getBoolean("donate.DontShow", false)) return;
 
-        String appVersion = getAppVersion(sherlockFragmentActivity);
-        if (prefs.getString("DonateShowVer", "").equals(appVersion)) return;
+            String appVersion = getAppVersion(sherlockFragmentActivity);
+            if (prefs.getString("DonateShowVer", "").equals(appVersion)) return;
 
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("DonateShowVer", appVersion);
-        editor.commit();
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("DonateShowVer", appVersion);
+            editor.commit();
 
-        SherlockDialogFragment dialogFragment = new SherlockDialogFragment() {
-            @Override
-            public Dialog onCreateDialog(Bundle savedInstanceState) {
-                return new AlertDialog.Builder(getActivity())
-                        .setTitle("Неофициальный 4pda клиент")
-                        .setMessage("Ваша поддержка - стимул к дальнейшей разработке и развитию программы\n" +
-                                "\n" +
-                                "Вы можете сделать это позже через меню>>настройки>>Помочь проекту")
-                        .setPositiveButton("Помочь проекту..",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,
-                                                        int which) {
-                                        dialog.dismiss();
-                                        Intent settingsActivity = new Intent(
-                                                getActivity(), DonateActivity.class);
-                                        startActivity(settingsActivity);
+            SherlockDialogFragment dialogFragment = new SherlockDialogFragment() {
+                @Override
+                public Dialog onCreateDialog(Bundle savedInstanceState) {
+                    return new AlertDialog.Builder(getActivity())
+                            .setTitle("Неофициальный 4pda клиент")
+                            .setMessage("Ваша поддержка - стимул к дальнейшей разработке и развитию программы\n" +
+                                    "\n" +
+                                    "Вы можете сделать это позже через меню>>настройки>>Помочь проекту")
+                            .setPositiveButton("Помочь проекту..",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog,
+                                                            int which) {
+                                            dialog.dismiss();
+                                            Intent settingsActivity = new Intent(
+                                                    getActivity(), DonateActivity.class);
+                                            startActivity(settingsActivity);
 
-                                    }
-                                })
-                        .setNegativeButton("Позже",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,
-                                                        int which) {
-                                        dialog.dismiss();
+                                        }
+                                    })
+                            .setNegativeButton("Позже",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog,
+                                                            int which) {
+                                            dialog.dismiss();
 
-                                    }
-                                }).create();
-            }
-        };
-        dialogFragment.show(sherlockFragmentActivity.getSupportFragmentManager(), "dialog");
+                                        }
+                                    }).create();
+                }
+            };
+            dialogFragment.show(sherlockFragmentActivity.getSupportFragmentManager(), "dialog");
+        } catch (Throwable ex) {
+            Log.e(sherlockFragmentActivity, ex);
+        }
+
 
     }
 
@@ -262,9 +277,98 @@ public class MyApp extends android.app.Application {
     }
 
     public String getAppExternalFolderPath() throws IOException {
-        String path=Environment.getExternalStorageDirectory().getAbsolutePath() + "/data/4pdaClient/";
-        if(!FileUtils.hasStorage(path, true))
-            throw new NotReportException("Нет доступа к папке программы: "+path);
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/data/4pdaClient/";
+        if (!FileUtils.hasStorage(path, true))
+            throw new NotReportException("Нет доступа к папке программы: " + path);
         return path;
+    }
+
+    private Date loadLastCheck4pdaVersionDate() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        String lastDateStr = prefs.getString("LastCheck4pdaVersionDate", null);
+        return null;
+    }
+
+    public static void check4pdaNewVersion(final Context context, final Handler handler) {
+        try {
+            String currentVersion = getAppVersion(context);
+            if (currentVersion.contains("beta"))
+                currentVersion = currentVersion.substring(0, currentVersion.indexOf("beta")).trim();
+            final String finalCurrentVersion = currentVersion;
+            new Thread(new Runnable() {
+                public void run() {
+                    Throwable threadEx = null;
+                    String pageBody = null;
+                    Boolean siteVersionsNewer = false;
+                    String releaseVer = null;
+                    try {
+                        pageBody = Client.INSTANCE.performGet("http://4pda.ru/forum/lofiversion/index.php?t271502.html");
+                        Matcher m = Pattern.compile("<b>версия:(.*?)</b>").matcher(pageBody);
+                        if (m.find()) {
+                            releaseVer = m.group(1).trim();
+                            siteVersionsNewer = isSiteVersionsNewer(releaseVer, finalCurrentVersion);
+                        }
+                    } catch (Throwable e) {
+                        threadEx = e;
+                    }
+
+
+                    final Throwable finalThreadEx = threadEx;
+
+
+                    final Boolean finalSiteVersionsNewer = siteVersionsNewer;
+                    final String finalReleaseVer = releaseVer;
+                    handler.post(new Runnable() {
+                        public void run() {
+                            if (finalThreadEx != null) {
+                                Log.e(context, new NotReportException("Ошибка проверки новой версии", finalThreadEx));
+                            } else {
+                                try {
+                                    if (finalSiteVersionsNewer) {
+                                        new AlertDialog.Builder(context)
+                                                .setTitle("Новая версия!")
+                                                .setMessage("На сайте 4pda выложена новая версия приложения: "
+                                                        + finalReleaseVer)
+                                                .setPositiveButton("Открыть тему", new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                                        Intent themeIntent = new Intent(context, ThemeActivity.class);
+                                                        themeIntent.setData(Uri.parse("4pda.ru/forum/index.php?showtopic=271502&view=getnewpost"));
+                                                        context.startActivity(themeIntent);
+                                                    }
+                                                })
+                                                .setNegativeButton("Отмена", null)
+                                                .create().show();
+                                    }
+                                } catch (Exception ex) {
+                                    Log.e(context, new NotReportException("Ошибка проверки новой версии", ex));
+                                }
+                            }
+                        }
+                    });
+                }
+            }).start();
+        } catch (Exception ex) {
+            Log.e(context, new NotReportException("Ошибка проверки новой версии", ex));
+        }
+
+    }
+
+    private static boolean isSiteVersionsNewer(String siteVersion, String programVersion) {
+        String[] siteVersionVals = TextUtils.split(siteVersion, "\\.");
+        String[] programVersionVals = TextUtils.split(programVersion, "\\.");
+
+        for (int i = 0; i < siteVersionVals.length; i++) {
+            int siteVersionVal = Integer.parseInt(siteVersionVals[i]);
+
+            if (programVersionVals.length == i)// значит на сайте версия с доп. циферкой
+                return true;
+
+            int programVersionVal = Integer.parseInt(programVersionVals[i]);
+
+            if (siteVersionVal == programVersionVal) continue;
+            return siteVersionVal > programVersionVal;
+        }
+        return false;
     }
 }

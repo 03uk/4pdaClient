@@ -1,17 +1,14 @@
 package org.softeg.slartus.forpda.download;
 
-import android.app.AlertDialog;
-import android.app.IntentService;
-import android.app.Notification;
+import android.app.*;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.ResultReceiver;
+import android.net.Uri;
+import android.os.*;
 import android.preference.PreferenceManager;
+import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.ViewGroup;
@@ -20,19 +17,25 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import org.apache.http.HttpEntity;
+import org.apache.http.cookie.Cookie;
 import org.softeg.slartus.forpda.Client;
 import org.softeg.slartus.forpda.HttpHelper;
+import org.softeg.slartus.forpda.IntentActivity;
 import org.softeg.slartus.forpda.classes.DownloadTask;
+import org.softeg.slartus.forpda.classes.common.ExtPreferences;
 import org.softeg.slartus.forpda.classes.common.FileUtils;
 import org.softeg.slartus.forpda.common.Log;
 import org.softeg.slartus.forpda.db.DownloadsTable;
 import org.softeg.slartus.forpdaapi.NotReportException;
+import org.softeg.slartus.forpdaapi.Qms_2_0;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -124,6 +127,51 @@ public class DownloadsService extends IntentService {
     }
 
     public static void download(final Context context1, final String url, final String tempFilePath, final int notificationId) {
+        try {
+            int downloadManager = ExtPreferences
+                    .parseInt(PreferenceManager.getDefaultSharedPreferences(context1.getApplicationContext()),
+                            "file.downloaderManagers",
+                            0);
+            switch (downloadManager) {
+                case 0:// клиент
+                    clientDownload(context1, url, tempFilePath, notificationId);
+                    break;
+                case 1: // системный
+                    systemDownload(context1, url);
+                    break;
+                case 2:
+                    new GetTempUrlTask(context1).execute(url);
+                    break;
+            }
+
+        } catch (Throwable ex) {
+            Log.e(context1, ex);
+        }
+
+    }
+
+
+    private static void systemDownload(Context context1, String url) {
+        DownloadManager dm = (DownloadManager) context1.getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+
+        List<Cookie> cookies = Client.INSTANCE.getCookies();
+        StringBuilder sb = new StringBuilder();
+        for (Cookie cookie : cookies) {
+            sb.append(cookie.getName() + "=" + cookie.getValue() + ";");
+
+        }
+        request.addRequestHeader("Cookie", sb.toString());
+
+        dm.enqueue(request);
+
+        Intent downloadIntent = new Intent();
+        downloadIntent.setAction(DownloadManager.ACTION_VIEW_DOWNLOADS);
+
+        context1.startActivity(downloadIntent);
+    }
+
+    private static void clientDownload(final Context context1, final String url, String tempFilePath, final int notificationId) {
         final String fileName = FileUtils.getFileNameFromUrl(url);
 
         if (TextUtils.isEmpty(tempFilePath)) {
@@ -159,7 +207,7 @@ public class DownloadsService extends IntentService {
             if (notificationId == -1)
                 notificationId = DownloadsTable.getNextId();
 
-            DownloadReceiver.showProgressNotification(context1,notificationId,fileName,0,url);
+            DownloadReceiver.showProgressNotification(context1, notificationId, fileName, 0, url);
 
             Client.INSTANCE.downloadFile(context1, url, notificationId, tempFilePath);
         } catch (Exception ex) {
@@ -283,6 +331,69 @@ public class DownloadsService extends IntentService {
         Bundle resultData = new Bundle();
         resultData.putInt("downloadTaskId", downloadTaskId);
         receiver.send(UPDATE_PROGRESS, resultData);
+    }
+
+    private static class GetTempUrlTask extends AsyncTask<String, Void, Uri> {
+
+
+        private final ProgressDialog dialog;
+        public String m_ChatBody;
+
+        private Context m_Context;
+
+        public GetTempUrlTask(Context context) {
+            m_Context = context;
+            dialog = new ProgressDialog(context);
+        }
+
+        @Override
+        protected Uri doInBackground(String... params) {
+            HttpHelper httpHelper = new HttpHelper();
+
+            try {
+                String url = params[0];
+
+                httpHelper.getDownloadResponse(url, 0);
+                URI redirectUri = HttpHelper.getRedirectUri();
+                Uri uri = Uri.parse(url);
+                if (redirectUri != null)
+                    uri = Uri.parse(redirectUri.toString());
+
+
+                return uri;
+            } catch (Throwable e) {
+                ex = e;
+                return null;
+            } finally {
+                httpHelper.close();
+            }
+        }
+
+        // can use UI thread here
+        protected void onPreExecute() {
+            this.dialog.setMessage("Запрос ссылки...");
+            this.dialog.show();
+        }
+
+        private Throwable ex;
+
+        // can use UI thread here
+        protected void onPostExecute(final Uri uri) {
+            if (this.dialog.isShowing()) {
+                this.dialog.dismiss();
+            }
+
+            if (uri != null) {
+                Intent marketIntent = new Intent(Intent.ACTION_VIEW, uri);
+                m_Context.startActivity(marketIntent);
+            } else {
+                if (ex != null)
+                    Log.e(m_Context, ex);
+                else
+                    Toast.makeText(m_Context, "Неизвестная ошибка",
+                            Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
 }

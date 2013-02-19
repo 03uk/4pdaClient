@@ -23,7 +23,7 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import org.softeg.slartus.forpda.prefs.PreferencesActivity;
-import org.softeg.slartus.forpda.search.SearchActivity;
+
 import org.softeg.slartus.forpda.Tabs.BaseTab;
 import org.softeg.slartus.forpda.Tabs.ITab;
 import org.softeg.slartus.forpda.Tabs.Tabs;
@@ -54,13 +54,14 @@ public class MainActivity extends BaseFragmentActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getSupportActionBar().setHomeButtonEnabled(false);
-
-        setContentView(R.layout.main);
-
-        createMenu();
 
         try {
+            getSupportActionBar().setHomeButtonEnabled(false);
+
+            setContentView(R.layout.main);
+
+            createMenu();
+
 
             org.softeg.slartus.forpda.Client client = org.softeg.slartus.forpda.Client.INSTANCE;
 
@@ -83,9 +84,9 @@ public class MainActivity extends BaseFragmentActivity {
                 return;
 
             createTabHost(savedInstanceState);
+            // MyApp.check4pdaNewVersion(this,mHandler);
 
-
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             Log.e(getApplicationContext(), ex);
         }
     }
@@ -256,6 +257,7 @@ public class MainActivity extends BaseFragmentActivity {
         super.onResume();
         m_ExitWarned = false;
         MyApp.INSTANCE.showPromo(this);
+
     }
 
 
@@ -278,6 +280,7 @@ public class MainActivity extends BaseFragmentActivity {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             String template = Tabs.getTemplate(prefs, tabId);
             BaseTab tabContent = Tabs.create(MainActivity.this, template, tabId);
+
             tabContent.setOnTabTitleChangedListener(new ThemesTab.OnTabTitleChangedListener() {
                 public void onTabTitleChanged(String title) {
                     View tabView = mTabHost.getCurrentTabView();
@@ -447,7 +450,7 @@ public class MainActivity extends BaseFragmentActivity {
                     .setIcon(isLight ? R.drawable.ic_search_inverse : R.drawable.ic_search);
             item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                 public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                    Intent intent = new Intent(getActivity(), SearchActivity.class);
+                    Intent intent = new Intent(getActivity(), org.softeg.slartus.forpda.search.SearchActivity.class);
                     startActivity(intent);
                     return true;
                 }
@@ -493,7 +496,7 @@ public class MainActivity extends BaseFragmentActivity {
             setOtherMenu();
 
 
-            menu.add("Закрыть программу")
+            item = menu.add("Закрыть программу")
                     .setIcon(android.R.drawable.ic_menu_close_clear_cancel)
                     .setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
 
@@ -505,6 +508,7 @@ public class MainActivity extends BaseFragmentActivity {
                             return true;
                         }
                     });
+            item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
 
         }
     }

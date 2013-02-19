@@ -28,7 +28,7 @@ public class QmsUser extends User {
         this.messagesCount = messagesCount;
     }
     
-    private String htmlColor;
+    private String htmlColor="gray";
 
     public String getHtmlColor() {
         return htmlColor;

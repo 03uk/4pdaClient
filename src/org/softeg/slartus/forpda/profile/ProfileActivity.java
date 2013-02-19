@@ -22,6 +22,7 @@ import com.actionbarsherlock.view.MenuItem;
 import org.softeg.slartus.forpda.*;
 import org.softeg.slartus.forpda.Mail.EditMailActivity;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
+import org.softeg.slartus.forpda.qms_2_0.QmsNewThreadActivity;
 import org.softeg.slartus.forpdaapi.UserProfile;
 
 import java.util.ArrayList;
@@ -46,6 +47,9 @@ public class ProfileActivity extends BaseFragmentActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.profile_activity);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
 
         getSupportActionBar().setSubtitle("профиль");
         mTabHost = (TabHost) findViewById(android.R.id.tabhost);
@@ -73,6 +77,16 @@ public class ProfileActivity extends BaseFragmentActivity {
         tabsAdapter.addTab(mTabHost.newTabSpec("friends").setIndicator(createTabView(this, "Друзья")), ProfileFriendsFragment.class, bundle);
 
         createActionMenu();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
+
+        return true;
     }
 
     @Override
@@ -176,20 +190,13 @@ public class ProfileActivity extends BaseFragmentActivity {
             com.actionbarsherlock.view.MenuItem item;
 
             if(Client.INSTANCE.getLogined() &&!getProfileActivity().getUserId().equals(Client.INSTANCE.UserId)){
-                item = menu.add("ЛС").setIcon(android.R.drawable.ic_menu_send);
+
+
+                item = menu.add("Сообщения (QMS)").setIcon(android.R.drawable.ic_menu_send);
                 item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
                     public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
+                        QmsNewThreadActivity.showUserNewThread(getActivity(), getProfileActivity().getUserId(), getProfileActivity().getUserNick());
 
-                        EditMailActivity.sendMessage(getActivity(), "CODE=04&act=Msg&MID=" + getProfileActivity().getUserId(), getProfileActivity().getUserNick(), true);
-                        return true;
-                    }
-                });
-                item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-
-                item = menu.add("QMS").setIcon(android.R.drawable.ic_menu_send);
-                item.setOnMenuItemClickListener(new com.actionbarsherlock.view.MenuItem.OnMenuItemClickListener() {
-                    public boolean onMenuItemClick(com.actionbarsherlock.view.MenuItem menuItem) {
-                        QmsChatActivity.openChat(getActivity(), getProfileActivity().getUserId(), getProfileActivity().getUserNick());
                         return true;
                     }
                 });

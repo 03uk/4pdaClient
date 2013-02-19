@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="org.softeg.slartus.forpda"
-          android:versionCode="178"
-          android:versionName="1.6.9beta1" android:installLocation="auto"
+          android:versionCode="210"
+          android:versionName="1.7.3beta2" android:installLocation="auto"
 
         >
     <uses-sdk android:minSdkVersion="5" android:targetSdkVersion="10"/>
@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.READ_LOGS"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
 
     <application android:label="@string/app_name" android:icon="@drawable/icon"
                  android:hardwareAccelerated="true"
@@ -48,9 +49,9 @@
                 <data android:mimeType="application/4pda"/>
             </intent-filter>
             <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.SEND" />-->
-                <!--<category android:name="android.intent.category.DEFAULT" />-->
-                <!--<data android:mimeType="image/*" />-->
+            <!--<action android:name="android.intent.action.SEND" />-->
+            <!--<category android:name="android.intent.category.DEFAULT" />-->
+            <!--<data android:mimeType="image/*" />-->
             <!--</intent-filter>-->
         </activity>
 
@@ -98,9 +99,10 @@
                   android:launchMode="singleTop"/>
         <activity android:name="org.softeg.slartus.forpda.prefs.DonateActivity" android:label="Помощь проекту"
                   android:launchMode="singleTop"/>
-        <activity android:name="org.softeg.slartus.forpda.prefs.DonateMarketActivity" android:label="Donate через Google Play"
+        <activity android:name="org.softeg.slartus.forpda.prefs.DonateMarketActivity"
+                  android:label="Donate через Google Play"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
-        <activity android:name=".search.SearchActivity" android:label="Поиск"
+        <activity android:name="org.softeg.slartus.forpda.search.SearchActivity" android:label="Поиск"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop">
         </activity>
         <activity android:name=".profile.ProfileActivity" android:label="Профиль"
@@ -110,15 +112,33 @@
         <activity android:name="org.softeg.slartus.forpda.Tabs.TabDataSettingsActivity"
                   android:label="Настройки закладки"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
+
         <activity android:name="org.softeg.slartus.forpda.qms.QmsContactsActivity" android:label="QMS абоненты"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
         <activity android:name="org.softeg.slartus.forpda.qms.QmsChatActivity" android:label="QMS"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
         <activity android:name="org.softeg.slartus.forpda.qms.QmsPreferencesActivity" android:label="Настройки QMS"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
-        <activity android:name="org.softeg.slartus.forpda.EditPostPlusActivity" android:label="Редактирование сообщения"
+
+        <activity android:name="org.softeg.slartus.forpda.qms_2_0.QmsContactsActivity" android:label="QMS абоненты"
+                  android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
+        <activity android:name="org.softeg.slartus.forpda.qms_2_0.QmsContactThemesActivity" android:label="QMS темы"
+                  android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
+        <activity android:name="org.softeg.slartus.forpda.qms_2_0.QmsChatActivity" android:label="QMS"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"
                   android:windowSoftInputMode="adjustResize"/>
+        <activity android:name="org.softeg.slartus.forpda.qms_2_0.QmsNewThreadActivity" android:label="QMS - Новая тема"
+                  android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
+
+        <activity android:name="org.softeg.slartus.forpda.EditPostPlusActivity" android:label="Редактирование сообщения"
+                  android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"
+                  android:windowSoftInputMode="adjustResize">
+            <!--<intent-filter android:label="@string/app_name">-->
+                <!--<action android:name="android.intent.action.SEND"/>-->
+                <!--<category android:name="android.intent.category.DEFAULT"/>-->
+                <!--<data android:mimeType="image/*"/>-->
+            <!--</intent-filter>-->
+        </activity>
         <activity android:name="org.softeg.slartus.forpda.QuickStartActivity" android:label="Быстрый доступ"
                   android:configChanges="orientation|keyboardHidden|screenSize" android:launchMode="singleTop"/>
         <activity android:name="org.softeg.slartus.forpda.DevDbDeviceActivity" android:label="DevDB.ru"

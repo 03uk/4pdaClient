@@ -1,9 +1,18 @@
 package org.softeg.slartus.forpda.topicview;
 
-import android.app.*;
-import android.content.*;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.app.SearchManager;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Picture;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -18,10 +27,7 @@ import android.view.ContextMenu;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.*;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
+import android.widget.*;
 import net.londatiga.android.ActionItem;
 import net.londatiga.android.QuickAction;
 import org.softeg.slartus.forpda.*;
@@ -32,18 +38,21 @@ import org.softeg.slartus.forpda.classes.common.ExtUrl;
 import org.softeg.slartus.forpda.classes.common.Functions;
 import org.softeg.slartus.forpda.common.HtmlUtils;
 import org.softeg.slartus.forpda.common.Log;
-
 import org.softeg.slartus.forpda.db.TopicsHistoryTable;
 import org.softeg.slartus.forpda.download.DownloadsService;
+import org.softeg.slartus.forpda.emotic.Smiles;
+import org.softeg.slartus.forpda.emotic.SmilesBbCodePanel;
 import org.softeg.slartus.forpda.profile.ProfileActivity;
 import org.softeg.slartus.forpda.qms.QmsChatActivity;
+import org.softeg.slartus.forpda.qms_2_0.QmsNewThreadActivity;
 import org.softeg.slartus.forpdaapi.NotReportException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Timer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,8 +82,8 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
 
     // флаг добавлять подпись к сообщению
-    private Boolean m_Enablesig = true, m_HidePostForm = false;
-    private Boolean m_EnableEmo = true;
+    private Boolean m_HidePostForm = false;
+
     // текст редактирования сообщения при переходе по страницам
     private String m_PostBody = "";
     // id сообщения к которому скроллить
@@ -88,6 +97,14 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     public static String s_ThemeId = null;
     public static String s_Params = null;
     TopicViewMenuFragment mFragment1;
+    private Gallery glrBbCodes;
+    private Gallery glrSmiles;
+    private EditText txtPost;
+    private Button tglSmiles;
+    private LinearLayout message_panel;
+
+    private boolean m_EnableSig = true;
+    private boolean m_EnableEmo = true;
 
     @Override
     public String Prefix() {
@@ -140,6 +157,123 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             }
         });
 
+        message_panel = (LinearLayout) findViewById(R.id.message_panel);
+        glrBbCodes = (Gallery) findViewById(R.id.glrBbCodes);
+        glrSmiles = (Gallery) findViewById(R.id.glrSmiles);
+        txtPost = (EditText) findViewById(R.id.edMessage);
+        new BbCodesPanel(this, glrBbCodes, txtPost);
+        new SmilesBbCodePanel(this, glrSmiles, txtPost);
+
+        findViewById(R.id.btnSend).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                post();
+            }
+        });
+
+        findViewById(R.id.btnAdvForm).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                advPost();
+            }
+        });
+
+        ((ToggleButton)findViewById(R.id.tglEnableEmo)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                m_EnableEmo=b;
+            }
+        });
+
+        ((ToggleButton)findViewById(R.id.tglEnableSig)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                m_EnableSig=b;
+            }
+        });
+
+        findViewById(R.id.btnSettings).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final boolean[] enableEmo = {m_EnableEmo};
+                final boolean[] enableSig = {m_EnableSig};
+                new AlertDialog.Builder(ThemeActivity.this)
+                        .setTitle("Дополнительно")
+                        .setMultiChoiceItems(new CharSequence[]{"Включить смайлики", "Добавить подпись"},
+                                new boolean[]{enableEmo[0], enableSig[0]},
+                                new DialogInterface.OnMultiChoiceClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+                                        switch (i) {
+                                            case 0:
+                                                enableEmo[0] = b;
+                                                break;
+                                            case 1:
+                                                enableSig[0] = b;
+                                                break;
+                                        }
+                                    }
+                                })
+                        .setPositiveButton("Применить", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                                m_EnableEmo = enableEmo[0];
+                                m_EnableSig = enableSig[0];
+                            }
+                        })
+//                        .setNeutralButton("Расширенная форма", new DialogInterface.OnClickListener() {
+//                            @Override
+//                            public void onClick(DialogInterface dialogInterface, int i) {
+//                                dialogInterface.dismiss();
+//                                advPost();
+//                            }
+//                        })
+                        .setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                dialogInterface.dismiss();
+                            }
+                        })
+                        .create().show();
+            }
+        });
+        tglSmiles = (Button) findViewById(R.id.tglSmiles);
+        tglSmiles.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                int mode = 0;// всё скрыто
+                if (glrSmiles.getVisibility() == View.VISIBLE)
+                    mode = 1;// смайлы видны
+                if (glrBbCodes.getVisibility() == View.VISIBLE)
+                    mode = 2;// bb-коды видны
+                switch (mode) {
+                    case 0:
+                        glrSmiles.setVisibility(View.VISIBLE);
+                        tglSmiles.setText("Bb");
+                        break;
+                    case 1:
+                        glrSmiles.setVisibility(View.GONE);
+                        glrBbCodes.setVisibility(View.VISIBLE);
+                        tglSmiles.setText(" v");
+                        break;
+                    case 2:
+                        glrSmiles.setVisibility(View.GONE);
+                        glrBbCodes.setVisibility(View.GONE);
+                        tglSmiles.setText(":)");
+                        break;
+                }
+            }
+        });
+//
+//        findViewById(R.id.tglbbCodes).setOnClickListener(new View.OnClickListener() {
+//            public void onClick(View view) {
+//
+//                glrBbCodes.setVisibility(glrBbCodes.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+//                //glrSmiles.setVisibility(glrSmiles.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+//                //tglGallerySwitcher.setText(glrBbCodes.getVisibility() == View.VISIBLE ? ":)" : "Bb");
+//            }
+//        });
+
 
         btnPrevSearch = (ImageButton) findViewById(R.id.btnPrevSearch);
         btnPrevSearch.setOnClickListener(new View.OnClickListener() {
@@ -166,7 +300,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         webView.getSettings().setDomStorageEnabled(true);
 
 
-        webView.getSettings().setAppCacheMaxSize(1024*1024*8);
+        webView.getSettings().setAppCacheMaxSize(1024 * 1024 * 8);
         String appCachePath = getApplicationContext().getCacheDir().getAbsolutePath();
         webView.getSettings().setAppCachePath(appCachePath);
         webView.getSettings().setAllowFileAccess(true);
@@ -262,13 +396,10 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             String url = "showtopic=" + s_ThemeId + (TextUtils.isEmpty(s_Params) ? "" : ("&" + s_Params));
             s_ThemeId = null;
             s_Params = null;
-            mHandler.post(new Runnable() {
-                public void run() {
-                    webView.loadUrl("javascript:clearPostBody();");
-                }
-            });
+            clearPostBody();
+
             closeSearch();
-            
+
             GetThemeTask getThemeTask = new GetThemeTask(this);
             String themeBody = s_ThemeBody;
             s_ThemeBody = null;
@@ -279,11 +410,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             String url = "showtopic=" + s_ThemeId + (TextUtils.isEmpty(s_Params) ? "" : ("&" + s_Params));
             s_ThemeId = null;
             s_Params = null;
-            mHandler.post(new Runnable() {
-                public void run() {
-                    webView.loadUrl("javascript:clearPostBody();");
-                }
-            });
+            clearPostBody();
             showTheme(url);
         }
 
@@ -296,6 +423,20 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             IntentActivity.tryShowUrl(this, mHandler, url, false, true);
 
         }
+    }
+
+    private void clearPostBody() {
+        txtPost.getText().clear();
+//        mHandler.post(new Runnable() {
+//            public void run() {
+//                webView.loadUrl("javascript:clearPostBody();");
+//            }
+//        });
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(txtPost.getWindowToken(), 0);
     }
 
 
@@ -316,6 +457,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     }
 
     public boolean onSearchRequested() {
+        hideMessagePanel();
         pnlSearch.setVisibility(View.VISIBLE);
         return false;
     }
@@ -363,8 +505,14 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     }
 
     public void showTopicAttaches() {
-        TopicAttaches res = new TopicAttaches();
-        webView.loadUrl("javascript:window.HTMLOUT.showTopicAttaches('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');");
+        try {
+            TopicAttaches res = new TopicAttaches();
+
+            webView.loadUrl("javascript:window.HTMLOUT.showTopicAttaches('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');");
+        } catch (Throwable ex) {
+            Log.e(this, ex);
+        }
+
 
     }
 
@@ -504,8 +652,8 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     public void clear(Boolean clearChache) {
         webView.setPictureListener(null);
         webView.setWebViewClient(null);
-        webView.loadData("<html><head></head><body bgcolor="+MyApp.INSTANCE.getCurrentThemeName()+"></body></html>","text/html", "UTF-8");
-        if(clearChache)
+        webView.loadData("<html><head></head><body bgcolor=" + MyApp.INSTANCE.getCurrentThemeName() + "></body></html>", "text/html", "UTF-8");
+        if (clearChache)
             webView.clearCache(true);
         if (m_Topic != null)
             m_Topic.dispose();
@@ -514,22 +662,25 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
 
     public String getPostBody() {
-        if (!Functions.isWebviewAllowJavascriptInterface(this))
-            return m_PostBody;
-
-        try {
-            webView.loadUrl("javascript:getPostBody();");
-            Thread.sleep(350);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        if (!Functions.isWebviewAllowJavascriptInterface(this))
+//            return m_PostBody;
+//
+//        try {
+//            webView.loadUrl("javascript:getPostBody();");
+//            Thread.sleep(350);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        return m_PostBody;
+        m_PostBody = txtPost.getText().toString();
         return m_PostBody;
     }
 
     public void openActionMenu(final String postId, Boolean canEdit, Boolean canDelete) {
-        final QuickAction mQuickAction = new QuickAction(this);
-        ActionItem actionItem;
-        int showProfilePosition = -1;
+        try {
+            final QuickAction mQuickAction = new QuickAction(this);
+            ActionItem actionItem;
+            int showProfilePosition = -1;
 //        if (post.getCanEdit()) {
 //            ActionItem actionItem = new ActionItem();
 //            actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
@@ -538,84 +689,85 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 //            showProfilePosition = mQuickAction.addActionItem(actionItem);
 //        }
 
-        int quotePosition = -1;
+            int quotePosition = -1;
 //        if (Client.INSTANCE.getLogined()) {
 //            actionItem = new ActionItem();
 //            actionItem.setTitle("Цитата");
 //            quotePosition = mQuickAction.addActionItem(actionItem);
 //        }
 
-        int claimPosition = -1;
-        if (Client.INSTANCE.getLogined()) {
-            actionItem = new ActionItem();
-            actionItem.setIcon(getResources().getDrawable(R.drawable.alert));
-            actionItem.setTitle("Жалоба");
-            claimPosition = mQuickAction.addActionItem(actionItem);
-        }
-
-        int editPosition = -1;
-        if (canEdit) {
-            actionItem = new ActionItem();
-            actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("Редактировать");
-
-            editPosition = mQuickAction.addActionItem(actionItem);
-        }
-
-
-        int deletePosition = -1;
-        if (canDelete) {
-            actionItem = new ActionItem();
-            actionItem.setTitle("Удалить");
-            actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_delete));
-            deletePosition = mQuickAction.addActionItem(actionItem);
-        }
-
-        int plusOdinPosition = -1;
-        int minusOdinPosition = -1;
-        if (!canEdit && !canDelete && Client.INSTANCE.getLogined()) {
-
-            actionItem = new ActionItem();
-            actionItem.setTitle("+1");
-            plusOdinPosition = mQuickAction.addActionItem(actionItem);
-
-            actionItem = new ActionItem();
-            actionItem.setTitle("-1");
-            minusOdinPosition = mQuickAction.addActionItem(actionItem);
-        }
-
-        final int finalDeletePosition = deletePosition;
-        final int finalEditPosition = editPosition;
-        final int finalShowProfilePosition = showProfilePosition;
-        final int finalClaimPosition = claimPosition;
-        final int finalPlusOdinPosition = plusOdinPosition;
-        final int finalMinusOdinPosition = minusOdinPosition;
-        mQuickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
-            public void onItemClick(int pos) {
-                if (pos == finalDeletePosition) {
-                    prepareDeleteMessage(postId);
-
-                } else if (pos == finalEditPosition) {
-                    EditPostPlusActivity.editPost(ThemeActivity.this, m_Topic.getForumId(), m_Topic.getId(), postId, m_Topic.getAuthKey());
-                } else if (pos == finalShowProfilePosition) {
-                    Intent intent = new Intent(ThemeActivity.this, ProfileActivity.class);
-
-                    ThemeActivity.this.startActivity(intent);
-                } else if (pos == finalClaimPosition) {
-                    org.softeg.slartus.forpda.classes.Post.claim(ThemeActivity.this, mHandler, m_Topic.getId(), postId);
-                } else if (pos == finalPlusOdinPosition) {
-                    org.softeg.slartus.forpda.classes.Post.plusOne(ThemeActivity.this, mHandler, postId);
-                } else if (pos == finalMinusOdinPosition) {
-                    org.softeg.slartus.forpda.classes.Post.minusOne(ThemeActivity.this, mHandler, postId);
-                }
-
-
+            int claimPosition = -1;
+            if (Client.INSTANCE.getLogined()) {
+                actionItem = new ActionItem();
+                actionItem.setIcon(getResources().getDrawable(R.drawable.alert));
+                actionItem.setTitle("Жалоба");
+                claimPosition = mQuickAction.addActionItem(actionItem);
             }
-        });
 
-        mQuickAction.show(webView);
+            int editPosition = -1;
+            if (canEdit) {
+                actionItem = new ActionItem();
+                actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
+                actionItem.setTitle("Редактировать");
+
+                editPosition = mQuickAction.addActionItem(actionItem);
+            }
 
 
+            int deletePosition = -1;
+            if (canDelete) {
+                actionItem = new ActionItem();
+                actionItem.setTitle("Удалить");
+                actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_delete));
+                deletePosition = mQuickAction.addActionItem(actionItem);
+            }
+
+            int plusOdinPosition = -1;
+            int minusOdinPosition = -1;
+            if (!canEdit && !canDelete && Client.INSTANCE.getLogined()) {
+
+                actionItem = new ActionItem();
+                actionItem.setTitle("+1");
+                plusOdinPosition = mQuickAction.addActionItem(actionItem);
+
+                actionItem = new ActionItem();
+                actionItem.setTitle("-1");
+                minusOdinPosition = mQuickAction.addActionItem(actionItem);
+            }
+
+            final int finalDeletePosition = deletePosition;
+            final int finalEditPosition = editPosition;
+            final int finalShowProfilePosition = showProfilePosition;
+            final int finalClaimPosition = claimPosition;
+            final int finalPlusOdinPosition = plusOdinPosition;
+            final int finalMinusOdinPosition = minusOdinPosition;
+            mQuickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
+                public void onItemClick(int pos) {
+                    if (pos == finalDeletePosition) {
+                        prepareDeleteMessage(postId);
+
+                    } else if (pos == finalEditPosition) {
+                        EditPostPlusActivity.editPost(ThemeActivity.this, m_Topic.getForumId(), m_Topic.getId(), postId, m_Topic.getAuthKey());
+                    } else if (pos == finalShowProfilePosition) {
+                        Intent intent = new Intent(ThemeActivity.this, ProfileActivity.class);
+
+                        ThemeActivity.this.startActivity(intent);
+                    } else if (pos == finalClaimPosition) {
+                        org.softeg.slartus.forpda.classes.Post.claim(ThemeActivity.this, mHandler, m_Topic.getId(), postId);
+                    } else if (pos == finalPlusOdinPosition) {
+                        org.softeg.slartus.forpda.classes.Post.plusOne(ThemeActivity.this, mHandler, postId);
+                    } else if (pos == finalMinusOdinPosition) {
+                        org.softeg.slartus.forpda.classes.Post.minusOne(ThemeActivity.this, mHandler, postId);
+                    }
+
+
+                }
+            });
+
+            mQuickAction.show(webView);
+        } catch (Throwable ex) {
+            Log.e(this, ex);
+        }
     }
 
     private void showThemeBody(String body) {
@@ -623,18 +775,36 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             ThemeActivity.this.setTitle(m_Topic.getTitle());
             getSupportActionBar().setSubtitle(m_Topic.getCurrentPage() + "/" + m_Topic.getPagesCount());
             webView.loadDataWithBaseURL("http://4pda.ru/forum/", body, "text/html", "UTF-8", null);
-            TopicsHistoryTable.addHistory(m_Topic,m_Params);
+            TopicsHistoryTable.addHistory(m_Topic, m_Params);
         } catch (Exception ex) {
             Log.e(ThemeActivity.this, ex);
         }
     }
 
+    public void showMessagePanel() {
+        message_panel.setVisibility(View.VISIBLE);
+        message_panel.setEnabled(Client.INSTANCE.getLogined());
+    }
+
+    public void hideMessagePanel() {
+        message_panel.setVisibility(View.GONE);
+        hideKeyboard();
+    }
+
+    public void toggleMessagePanelVisibility() {
+        if (message_panel.getVisibility() == View.GONE)
+            showMessagePanel();
+        else
+            hideMessagePanel();
+
+    }
+
     private class MyPictureListener implements WebView.PictureListener {
         Thread m_ScrollThread;
-        Boolean m_Wait=true;
+        Boolean m_Wait = true;
 
         public void onNewPicture(WebView view, Picture arg1) {
-            if (TextUtils.isEmpty(m_ScrollElement) ) {
+            if (TextUtils.isEmpty(m_ScrollElement)) {
                 //webView.setPictureListener(null);
                 return;
             }
@@ -644,7 +814,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             m_ScrollThread = new Thread(new Runnable() {
                 public void run() {
                     try {
-                       Thread.sleep(900);
+                        Thread.sleep(900);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -665,7 +835,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 //                webView.scrollTo(0, Math.min(m_ScrollY, (int) Math.floor(webView.getContentHeight() * webView.getScale() - webView.getHeight())));
 //            } else
             if (!TextUtils.isEmpty(m_ScrollElement)) {
-                webView.scrollTo(0, 10);
+                webView.scrollTo(0, 100);
                 webView.scrollTo(0, 0);
                 webView.loadUrl("javascript: scrollToElement('entry" + m_ScrollElement + "');");
                 m_ScrollElement = null;
@@ -747,17 +917,17 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
                         method.invoke(ThemeActivity.this, parameterValues);
                     } catch (SecurityException e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     } catch (NoSuchMethodException e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.eToast(ThemeActivity.this, e);
                     }
                     return true;
                 }
@@ -840,9 +1010,9 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     public void showTheme(String url) {
         closeSearch();
         webView.clearCache(true);
-        
+
         webView.setWebViewClient(new MyWebViewClient());
-        webView.loadData("<html><head></head><body bgcolor="+MyApp.INSTANCE.getCurrentThemeName()+"></body></html>","text/html", "UTF-8");
+        webView.loadData("<html><head></head><body bgcolor=" + MyApp.INSTANCE.getCurrentThemeName() + "></body></html>", "text/html", "UTF-8");
 
         GetThemeTask getThemeTask = new GetThemeTask(this);
         getThemeTask.execute(url.replace("|", ""));
@@ -853,6 +1023,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     }
 
     private void sendMessage(String body) {
+        hideKeyboard();
         PostTask postTask = new PostTask(ThemeActivity.this);
         postTask.Post = body;
         postTask.execute();
@@ -901,7 +1072,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                             Log.e(ThemeActivity.this, finalEx);
 
                         m_ScrollY = webView.getScrollY();
-                        m_ScrollX = webView.getScrollY();
+                        m_ScrollX = webView.getScrollX();
                         showTheme(m_LastUrl);
                     }
                 });
@@ -924,20 +1095,12 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             insertNickPosition = mQuickAction.addActionItem(actionItem);
         }
 
-        int sendLSPosition = -1;
-        if (Client.INSTANCE.getLogined()) {
-            ActionItem actionItem = new ActionItem();
-            // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("   ЛС   ");
-
-            sendLSPosition = mQuickAction.addActionItem(actionItem);
-        }
 
         int sendQmsPosition = -1;
         if (Client.INSTANCE.getLogined()) {
             ActionItem actionItem = new ActionItem();
             // actionItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_edit));
-            actionItem.setTitle("   QMS   ");
+            actionItem.setTitle("Сообщения (QMS)");
 
             sendQmsPosition = mQuickAction.addActionItem(actionItem);
         }
@@ -947,28 +1110,32 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         actionItem.setTitle("Профиль");
         showProfilePosition = mQuickAction.addActionItem(actionItem);
 
+        int showDevicePosition = -1;
+//        actionItem = new ActionItem();
+//        actionItem.setTitle("Устройство");
+//        showDevicePosition = mQuickAction.addActionItem(actionItem);
 
         if (mQuickAction.getItemsCount() == 0) return;
 
         final int finalInsertNickPosition = insertNickPosition;
-        final int finalSendLSPosition = sendLSPosition;
+
         final int finalSendQmsPosition = sendQmsPosition;
         final int finalShowProfilePosition = showProfilePosition;
+        final int finalShowDevicePosition = showDevicePosition;
         mQuickAction.setOnActionItemClickListener(new QuickAction.OnActionItemClickListener() {
             public void onItemClick(int pos) {
                 try {
                     if (pos == finalInsertNickPosition) {
-                        mHandler.post(new Runnable() {
-                            public void run() {
-                                webView.loadUrl("javascript:insertText('[b]" + userNick + ",[/b] ');");
-                            }
-                        });
-                    } else if (pos == finalSendLSPosition) {
-                        EditMailActivity.sendMessage(ThemeActivity.this, "CODE=04&act=Msg&MID=" + userId, userNick, true);
+                        insertTextToPost("[b]" + userNick + ",[/b] ");
+
                     } else if (pos == finalSendQmsPosition) {
-                        QmsChatActivity.openChat(ThemeActivity.this, userId, userNick);
+                        QmsNewThreadActivity.showUserNewThread(ThemeActivity.this, userId, userNick);
                     } else if (pos == finalShowProfilePosition) {
                         ProfileActivity.startActivity(ThemeActivity.this, userId, userNick);
+                    } else if (pos == finalShowDevicePosition) {
+//                        new AlertDialog.Builder(ThemeActivity.this)
+//                                .setTitle("Устройство")
+//                                .create()
                     }
                 } catch (Exception ex) {
                     Log.e(ThemeActivity.this, ex);
@@ -977,6 +1144,17 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         });
 
         mQuickAction.show(webView);
+    }
+
+    public void insertTextToPost(final String text) {
+
+        mHandler.post(new Runnable() {
+            public void run() {
+                int selection = txtPost.getSelectionStart();
+                txtPost.getText().insert(selection == -1 ? 0 : selection, text);
+                showMessagePanel();
+            }
+        });
     }
 
     // class JavaScriptInterface
@@ -1002,11 +1180,11 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
     }
 
     public void enableemo() {
-        m_EnableEmo = !m_EnableEmo;
+        //m_EnableEmo = !m_EnableEmo;
     }
 
     public void enablesig() {
-        m_Enablesig = !m_Enablesig;
+        //m_Enablesig = !m_Enablesig;
     }
 
     public String getPostText(String postId, String date, String userNick, String innerText) {
@@ -1020,6 +1198,10 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
     }
 
+    public void advPost() {
+        advPost(getPostBody());
+    }
+
     public void advPost(final String body) {
         Intent intent = new Intent(ThemeActivity.this, EditPostPlusActivity.class);
 
@@ -1031,6 +1213,10 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         ThemeActivity.this.startActivity(intent);
 
 
+    }
+
+    public void post() {
+        post(getPostBody());
     }
 
     public void post(final String body) {
@@ -1210,7 +1396,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                 m_ScrollElement = m.group(1);
             }
         }
-        if(m_ScrollElement!=null)
+        if (m_ScrollElement != null)
             webView.setPictureListener(new MyPictureListener());
     }
 
@@ -1254,8 +1440,9 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                 } else
                     pageBody = forums[1];
 
-                String lastUrl=client.getRedirectUri()==null?m_LastUrl: client.getRedirectUri().toString();
-                TopicBodyBuilder topicBodyBuilder = client.parseTopic(pageBody, mHandler, MyApp.INSTANCE, lastUrl, m_SpoilFirstPost, m_Enablesig, m_EnableEmo, m_PostBody, m_HidePostForm, null);
+                String lastUrl = client.getRedirectUri() == null ? m_LastUrl : client.getRedirectUri().toString();
+                TopicBodyBuilder topicBodyBuilder = client.parseTopic(pageBody, mHandler, MyApp.INSTANCE, lastUrl,
+                        m_SpoilFirstPost, getEnableSig(), getEnableEmo(), m_PostBody, m_HidePostForm, null);
 
                 setScrollElement();
 
@@ -1267,7 +1454,7 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
 
                 topicBodyBuilder.clear();
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 m_ThemeBody = pageBody;
                 // Log.e(ThemeActivity.this, e);
                 ex = e;
@@ -1325,6 +1512,14 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         }
     }
 
+    private Boolean getEnableSig() {
+        return m_EnableSig;
+    }
+
+    private Boolean getEnableEmo() {
+        return m_EnableEmo;
+    }
+
     private class PostTask extends AsyncTask<String, Void, Boolean> {
 
 
@@ -1344,12 +1539,12 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         protected Boolean doInBackground(String... params) {
             try {
                 mPostResult = Client.INSTANCE.reply(m_Topic.getForumId(), m_Topic.getId(), m_Topic.getAuthKey(),
-                        Post, m_Enablesig, m_EnableEmo, true, null);
+                        Post, getEnableSig(), getEnableEmo(), true, null);
                 mError = org.softeg.slartus.forpdaapi.Post.checkPostErrors(mPostResult);
 
-                String lastUrl=Client.INSTANCE.getRedirectUri()==null?m_LastUrl: Client.INSTANCE.getRedirectUri().toString();
+                String lastUrl = Client.INSTANCE.getRedirectUri() == null ? m_LastUrl : Client.INSTANCE.getRedirectUri().toString();
                 TopicBodyBuilder topicBodyBuilder = Client.INSTANCE.parseTopic(mPostResult, mHandler, MyApp.INSTANCE, lastUrl,
-                        m_SpoilFirstPost, m_Enablesig, m_EnableEmo, m_PostBody, m_HidePostForm, null);
+                        m_SpoilFirstPost, getEnableSig(), getEnableEmo(), m_PostBody, m_HidePostForm, null);
                 setScrollElement();
                 setThemeParams(Client.INSTANCE.getRedirectUri() != null ? Client.INSTANCE.getRedirectUri().toString() : m_LastUrl);
                 m_Topic = topicBodyBuilder.getTopic();
@@ -1385,13 +1580,19 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
                     //return;
                 }
                 //webView.loadUrl("javascript:clearPostBody();");
-                
+                clearPostBody();
+                hideMessagePanel();
                 showThemeBody(m_ThemeBody);
 
 
             } else {
                 if (ex != null)
-                    Log.e(ThemeActivity.this, ex);
+                    Log.e(ThemeActivity.this, ex, new Runnable() {
+                        @Override
+                        public void run() {
+                            sendMessage(Post);
+                        }
+                    });
                 else
                     Toast.makeText(ThemeActivity.this, "Неизвестная ошибка",
                             Toast.LENGTH_SHORT).show();
@@ -1432,14 +1633,18 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
         }
 
         private String m_Quote = "";
+        private String m_Url;
 
         @Override
         protected Boolean doInBackground(String... strings) {
             try {
-                String page = Client.INSTANCE.performGet(strings[0]);
+                m_Url = strings[0];
+                String page = Client.INSTANCE.performGet(m_Url);
                 Matcher m = Pattern.compile("<textarea name=\"Post\".*?>([\\s\\S]*?)</textarea>").matcher(page);
                 if (m.find()) {
-                    m_Quote = HtmlUtils.modifyHtmlQuote(m.group(1)).replace("'", "\\'").replace("\n", "\\n");
+                    m_Quote = HtmlUtils.modifyHtmlQuote(m.group(1))
+//                            .replace("'", "\\'").replace("\n", "\\n")
+                    ;
                 }
                 return true;
             } catch (Throwable e) {
@@ -1464,41 +1669,48 @@ public class ThemeActivity extends BrowserViewsFragmentActivity {
             if (isCancelled()) return;
 
             if (success) {
-                String jsText = "javascript: insertText('" + m_Quote + "');";
-                webView.loadUrl(jsText);
+                insertTextToPost(m_Quote);
+
             } else {
-                Log.e(ThemeActivity.this, ex);
+                Log.e(ThemeActivity.this, ex, new Runnable() {
+                    @Override
+                    public void run() {
+                        new QuoteLoader(ThemeActivity.this).execute(m_Url);
+                    }
+                });
             }
         }
     }
+
     @Override
-    protected void onSaveInstanceState (Bundle outState){
+    protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
 
         outState.putString("LastUrl", m_LastUrl);
         outState.putString("ScrollElement", m_ScrollElement);
-        outState.putBoolean("Enablesig", m_Enablesig);
-        outState.putBoolean("EnableEmo", m_EnableEmo);
+        outState.putBoolean("Enablesig", getEnableSig());
+        outState.putBoolean("EnableEmo", getEnableEmo());
         outState.putBoolean("FromHistory", m_FromHistory);
         outState.putInt("ScrollY", m_ScrollY);
         outState.putInt("ScrollX", m_ScrollX);
     }
 
     @Override
-    protected void onRestoreInstanceState (Bundle outState){
+    protected void onRestoreInstanceState(Bundle outState) {
         super.onRestoreInstanceState(outState);
-        m_LastUrl=outState.getString("LastUrl");
-        m_ScrollElement=outState.getString("ScrollElement");
-        if(m_ScrollElement!=null&&!TextUtils.isEmpty(m_ScrollElement))
+        m_LastUrl = outState.getString("LastUrl");
+        m_ScrollElement = outState.getString("ScrollElement");
+        if (m_ScrollElement != null && !TextUtils.isEmpty(m_ScrollElement))
             webView.setPictureListener(new MyPictureListener());
-        m_Enablesig=outState.getBoolean("Enablesig");
-        m_EnableEmo=outState.getBoolean("EnableEmo");
-        m_FromHistory=outState.getBoolean("FromHistory");
-        m_ScrollY=outState.getInt("ScrollY");
-        m_ScrollX=outState.getInt("ScrollX");
+        m_EnableSig = outState.getBoolean("Enablesig");
+        m_EnableEmo = outState.getBoolean("EnableEmo");
+        m_FromHistory = outState.getBoolean("FromHistory");
+        m_ScrollY = outState.getInt("ScrollY");
+        m_ScrollX = outState.getInt("ScrollX");
         loadPreferences(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()));
     }
+
     @Override
     public void onPause() {
         super.onPause();

@@ -1,9 +1,5 @@
 package org.softeg.slartus.forpda;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by IntelliJ IDEA.
  * User: Admin
@@ -21,11 +17,9 @@ public class EditPost {
     }
 
 
-    public static String getPostForm(Boolean enableSig, Boolean enableemo, Boolean isModerator, Boolean loadImages) {
-        return getPostForm(enableSig, enableemo, "", isModerator,  loadImages);
-    }
 
-    public static String getPostForm(Boolean enableSig, Boolean enableemo, String msg, Boolean isModerator, Boolean loadImages) {
+    public static String getPostForm(Boolean enableSig, Boolean enableemo, String msg, Boolean isModerator, Boolean loadImages,
+                                     Boolean isWebviewAllowJavascriptInterface) {
         String theme = MyApp.INSTANCE.getCurrentThemeName();
         return "<div class=\"quick_editor\">" +
                 "<div class=\"post_header_editor\">Ответить</div>\n" +
@@ -48,6 +42,9 @@ public class EditPost {
                 "</table>" +
                 "<center><input class=\"mod_chk\" type=\"checkbox\" name=\"enableemo\" id=\"enableemo\" " + (enableemo ? "checked=\"checked\"" : "") + " onClick=\"javascript: window.HTMLOUT.enableemo();\"/>&nbsp;Включить смайлики</center>\n" +
                 "<center><input class=\"mod_chk\" type=\"checkbox\" name=\"enablesig\" id=\"enablesig\" " + (enableSig ? "checked=\"checked\"" : "") + " onClick=\"javascript: window.HTMLOUT.enablesig();\"/>&nbsp;Добавить подпись</center>\n" +
+//                "<div class=\"post_footer\"><center><a " + TopicBodyBuilder.getHtmlout(isWebviewAllowJavascriptInterface, "preparePost") + " class=\"href_button"  + "\"> Отправить </a></center></div>\n"+
+//                "<div class=\"post_footer\"><center><a " + TopicBodyBuilder.getHtmlout(isWebviewAllowJavascriptInterface, "advPost") + " class=\"href_button"  + "\"> Расширенная форма </a></center></div>\n"+
+
                 "<div class=\"post_footer\"><center><input type=\"button\" value=\" Отправить \" onclick=\"preparePost()\" /></center></div>\n" +
                 "<div class=\"post_footer\"><center><input type=\"button\" value=\" Расширенная форма \" onclick=\"advPost()\" /></center></div>\n" +
                 "</form>" +
